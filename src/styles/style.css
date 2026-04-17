@@ -142,14 +142,14 @@ body {
   width: var(--sidebar-width);
   height: 100vh;
   padding: 28px 16px;
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--text);
+  background: linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.78));
+  color: #fff;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-right: 1px solid var(--line);
-  box-shadow: 6px 0 30px rgba(10, 10, 10, 0.04);
-  backdrop-filter: blur(6px);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(4px);
 }
 
 .brand-wrap {
@@ -195,7 +195,7 @@ body {
 
 .site-nav a:hover,
 .site-nav a.active {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
   transform: translateX(2px);
 }
 
@@ -205,15 +205,15 @@ body {
   font-size: 12px;
   padding: 4px 7px;
   border-radius: 999px;
-  color: #103970;
-  background: #fff9e6;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #111;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
 .nav-footer {
   margin-top: auto;
   padding: 12px;
-  opacity: 0.86;
+  color: rgba(255,255,255,0.9);
   font-size: 12px;
 }
 
