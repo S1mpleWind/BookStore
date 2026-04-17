@@ -3,16 +3,16 @@
 :root {
   --sidebar-width: 248px;
   --content-max: 1120px;
-  --text: #172033;
-  --muted: #667085;
+  --text: #0b0b0b;
+  --muted: #6b6b6b;
   --surface: #ffffff;
-  --surface-soft: #f7f9fc;
-  --line: #e4e8f0;
-  --brand-1: #0f5bd8;
-  --brand-2: #13a9d6;
-  --accent: #f4a200;
-  --shadow-lg: 0 20px 50px rgba(20, 35, 70, 0.12);
-  --shadow-md: 0 12px 30px rgba(20, 35, 70, 0.1);
+  --surface-soft: #f4f4f5;
+  --line: #e6e6e6;
+  --brand-1: #111111;
+  --brand-2: #3f3f46;
+  --accent: #9b9b9b;
+  --shadow-lg: 0 20px 50px rgba(10, 10, 10, 0.06);
+  --shadow-md: 0 12px 30px rgba(10, 10, 10, 0.04);
 }
 
 * { box-sizing: border-box; }
@@ -142,15 +142,14 @@ body {
   width: var(--sidebar-width);
   height: 100vh;
   padding: 28px 16px;
-  background:
-    radial-gradient(circle at 100% 0, rgba(255, 255, 255, 0.3), transparent 40%),
-    linear-gradient(200deg, #0a4eb8 10%, #0d79c7 58%, #17acd8 100%);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   gap: 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 10px 0 40px rgba(10, 35, 80, 0.25);
+  border-right: 1px solid var(--line);
+  box-shadow: 6px 0 30px rgba(10, 10, 10, 0.04);
+  backdrop-filter: blur(6px);
 }
 
 .brand-wrap {
@@ -305,39 +304,43 @@ body {
 }
 
 /* 推荐横向展示区域，简约风格 */
+
+/* 推荐区：一次显示一张，左右滚动，使用 scroll-snap 体验 */
 .featured-list {
   display: flex;
   gap: 14px;
   overflow-x: auto;
   padding: 8px 4px 12px;
   -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
 }
 
 .featured-list .card {
-  min-width: 320px;
-  max-width: 360px;
+  min-width: 78%;
+  max-width: 78%;
   flex-direction: row;
   align-items: center;
   text-align: left;
-  padding: 12px;
+  padding: 14px;
   border-radius: 12px;
+  scroll-snap-align: center;
 }
 
 .featured-list .book-cover-wrap {
-  width: 110px;
-  padding: 10px;
-  flex: 0 0 110px;
+  width: 140px;
+  padding: 8px;
+  flex: 0 0 140px;
 }
 
 .featured-list .card img {
-  width: 90px;
-  height: 130px;
-  border-radius: 8px;
+  width: 112px;
+  height: 160px;
+  border-radius: 6px;
 }
 
 .featured-badge {
   display: inline-block;
-  background: var(--brand-1);
+  background: var(--brand-2);
   color: #fff;
   padding: 6px 8px;
   border-radius: 999px;
