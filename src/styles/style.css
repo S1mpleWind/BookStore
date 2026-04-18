@@ -196,7 +196,7 @@ body {
   font-weight: 700;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   transition: background 0.25s ease, transform 0.25s ease;
 }
 
@@ -243,6 +243,21 @@ body {
   color: #111;
   background: rgba(255,255,255,0.9);
   border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* 隐藏购物车上的数字，仅保留视觉占位（如需完全移除，删除该元素） */
+.cart-badge {
+  display: none;
+}
+
+/* 主内容区在侧栏收缩时的响应：默认占用收缩宽度，hover 时展开 */
+.main-content {
+  margin-left: 72px;
+  transition: margin-left 220ms ease, padding 220ms ease;
+}
+
+.site-nav:hover ~ .main-content {
+  margin-left: var(--sidebar-width);
 }
 
 .nav-footer {

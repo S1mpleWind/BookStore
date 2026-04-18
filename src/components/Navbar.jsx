@@ -38,7 +38,7 @@ const Navbar = () => {
           <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="nav-icon">🧺</span>
             <span className="nav-label">购物车</span>
-            <span className="cart-badge" aria-label="购物车数量">{totalCount}</span>
+            <span className="cart-badge" aria-label="购物车数量" />
           </NavLink>
         </li>
         <li>
@@ -50,7 +50,6 @@ const Navbar = () => {
       </ul>
 
       <div className="nav-footer">
-        <small>Spring 2026 UI Refresh</small>
         <button className="btn btn-outline nav-logout" onClick={handleLogout}>
           退出登录
         </button>
