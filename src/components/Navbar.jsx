@@ -35,6 +35,12 @@ const Navbar = () => {
           </NavLink>
         </li>
         <li>
+          <NavLink to="/profile" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <span className="nav-icon">👤</span>
+            <span className="nav-label">个人信息</span>
+          </NavLink>
+        </li>
+        <li>
           <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="nav-icon">🧺</span>
             <span className="nav-label">购物车</span>

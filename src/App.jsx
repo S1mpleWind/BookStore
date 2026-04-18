@@ -6,7 +6,9 @@ import Detail from './pages/Detail';
 import Cart from './pages/Cart';
 import Order from './pages/Order';
 import Login from './pages/Login';
+import Profile from './pages/Profile';
 import { CartProvider } from './components/CartContext';
+import { UserProvider } from './components/UserContext';
 import './styles/style.css';
 
 const isLoggedIn = () => {
@@ -69,6 +71,12 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
             </ProtectedRoute>
           )} />
 
+          <Route path="/profile" element={(
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          )} />
+
           {/*如果不是登录，就定向到./*/}
           <Route path="*" element={<Navigate to={isLoggedIn() ? '/' : '/login'} replace />} />
         </Routes>
@@ -85,11 +93,13 @@ const App = () => {
   const [selectedBook, setSelectedBook] = useState(null);
 
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <AppRoutes selectedBook={selectedBook} setSelectedBook={setSelectedBook} />
-      </BrowserRouter>
-    </CartProvider>
+    <UserProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <AppRoutes selectedBook={selectedBook} setSelectedBook={setSelectedBook} />
+        </BrowserRouter>
+      </CartProvider>
+    </UserProvider>
   );
 };
 
