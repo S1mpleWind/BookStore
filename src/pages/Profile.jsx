@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../components/UserContext';
+import { saveUserProfile } from '../api';
 
 const Profile = () => {
   const { user, update, logout } = useUser();
@@ -13,8 +14,19 @@ const Profile = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
+    // 先本地更新（保持现有交互），然后异步尝试同步到后端
     update({ name, email });
+    saveUserProfile({ name, email })
+      .then((serverUser) => {
+        // 可选：将后端返回的字段合并回本地用户（例如 id、updatedAt）
+        update(serverUser);
+      })
+      .catch(() => {
+        // 同步失败时保留本地更改并可展示提示（此处忽略）
+      });
   };
+
+  const [saveNotice, setSaveNotice] = React.useState('');
 
   return (
     <div className="content-inner">
@@ -36,6 +48,7 @@ const Profile = () => {
             <button className="btn" type="submit">保存</button>
             <button type="button" className="btn btn-outline" onClick={() => logout()}>退出登录</button>
           </div>
+          {saveNotice ? <p className="muted" style={{ marginTop: 8 }}>{saveNotice}</p> : null}
         </form>
       </section>
     </div>

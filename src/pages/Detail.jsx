@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../components/CartContext';
+import { useUser } from '../components/UserContext';
+import { addToCartRemote, purchaseNow } from '../api';
 import booksData from '../data/books.json';
 
 /**
@@ -11,6 +13,7 @@ const Detail = () => {
   const { id } = useParams();
   const { addToCart } = useCart();
   const [notice, setNotice] = useState('');
+  const { user } = useUser();
   
   // 从加载的 JSON 中查找指定 ID 的书籍
   const book = booksData.find((b) => String(b.id) === String(id));
@@ -29,6 +32,24 @@ const Detail = () => {
   const handleAddToCart = () => {
     addToCart(book);
     setNotice('已加入购物车，可前往购物车查看。');
+    // 后端同步（非阻塞）：如果后端可用，这里建议将该请求改为真实 API 调用
+    if (user) {
+      addToCartRemote(user, book).catch(() => {
+        // 忽略远端同步错误；本地购物车保持原有行为
+      });
+    }
+  };
+
+  const handleBuyNow = async () => {
+    // 本地行为：立即创建订单前可把商品加入本地购物车或直接跳转到结算页
+    setNotice('正在创建订单……');
+    try {
+      const resp = await purchaseNow(user, book, 1);
+      setNotice(`订单已创建：${resp.orderId}`);
+      // 这里可以跳转到订单页或结算成功页
+    } catch (err) {
+      setNotice('创建订单失败，请稍后重试。');
+    }
   };
 
   return (
@@ -54,6 +75,9 @@ const Detail = () => {
             <div className="detail-actions">
               <button className="btn" onClick={handleAddToCart}>
                 加入购物车
+              </button>
+              <button className="btn btn-outline" onClick={handleBuyNow}>
+                立即购买
               </button>
               <Link to="/cart" className="btn btn-outline">查看购物车</Link>
             </div>
