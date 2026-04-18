@@ -25,23 +25,26 @@ const Navbar = () => {
     <nav className="site-nav" aria-label="主导航">
       <div className="brand-wrap">
         <div className="brand">电子书店</div>
-        <p className="brand-subtitle">Computer Science Classics</p>
+        
       </div>
       <ul>
         <li>
           <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
-            书籍
+            <span className="nav-icon">📚</span>
+            <span className="nav-label">书籍</span>
           </NavLink>
         </li>
         <li>
           <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}>
-            购物车
+            <span className="nav-icon">🧺</span>
+            <span className="nav-label">购物车</span>
             <span className="cart-badge" aria-label="购物车数量">{totalCount}</span>
           </NavLink>
         </li>
         <li>
           <NavLink to="/order" className={({ isActive }) => (isActive ? 'active' : '')}>
-            订单
+            <span className="nav-icon">📄</span>
+            <span className="nav-label">订单</span>
           </NavLink>
         </li>
       </ul>
