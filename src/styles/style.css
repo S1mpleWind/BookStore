@@ -22,6 +22,11 @@ body,
   background: #ffffff;
 }
 
+/* 进一步覆盖应用中可能出现的透出背景：确保主容器始终为白色 */
+html, body, #root, .app-layout, .main-content, .content-inner {
+  background: #ffffff !important;
+}
+
 * { box-sizing: border-box; }
 
 .price {
