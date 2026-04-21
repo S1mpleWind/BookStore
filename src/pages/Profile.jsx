@@ -1,55 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../components/UserContext';
 import { saveUserProfile } from '../api';
+import { Form, Input, Button, message } from 'antd';
 
 const Profile = () => {
   const { user, update, logout } = useUser();
-  const [name, setName] = useState(user?.name || '');
-  const [email, setEmail] = useState(user?.email || '');
+  const [form] = Form.useForm();
 
   useEffect(() => {
-    setName(user?.name || '');
-    setEmail(user?.email || '');
+    form.setFieldsValue({ name: user?.name || '', email: user?.email || '' });
   }, [user]);
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    // 先本地更新（保持现有交互），然后异步尝试同步到后端
-    update({ name, email });
-    saveUserProfile({ name, email })
-      .then((serverUser) => {
-        // 可选：将后端返回的字段合并回本地用户（例如 id、updatedAt）
-        update(serverUser);
-      })
-      .catch(() => {
-        // 同步失败时保留本地更改并可展示提示（此处忽略）
-      });
-  };
+  const handleSave = async (values) => {
+    // 保持本地更新行为
+    update(values);
 
-  const [saveNotice, setSaveNotice] = React.useState('');
+    // 后端同步（示例注释在 src/api.js 中）
+    try {
+      const serverUser = await saveUserProfile(values);
+      // 将后端返回值合并回本地（例如补齐 id、updatedAt 等）
+      update(serverUser);
+      message.success('保存成功');
+    } catch (err) {
+      message.error('保存到后端失败，已保留本地更改');
+    }
+  };
 
   return (
     <div className="content-inner">
       <section className="hero-panel">
         <p className="hero-kicker">PROFILE</p>
         <h1 className="page-title">个人信息</h1>
-        <p className="hero-desc">在此查看并更新你的姓名与邮箱（仅本地保存）。</p>
+        <p className="hero-desc">在此查看并更新你的姓名与邮箱（本地优先，后台可同步）。</p>
       </section>
 
       <section style={{ maxWidth: 720, margin: '0 auto' }}>
-        <form className="login-form" onSubmit={handleSave}>
-          <label htmlFor="name">姓名</label>
-          <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          <Form.Item label="姓名" name="name" rules={[{ required: true, message: '请输入姓名' }]}>
+            <Input />
+          </Form.Item>
 
-          <label htmlFor="email">邮箱</label>
-          <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Form.Item label="邮箱" name="email" rules={[{ type: 'email', message: '请输入有效邮箱' }]}> 
+            <Input />
+          </Form.Item>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button className="btn" type="submit">保存</button>
-            <button type="button" className="btn btn-outline" onClick={() => logout()}>退出登录</button>
-          </div>
-          {saveNotice ? <p className="muted" style={{ marginTop: 8 }}>{saveNotice}</p> : null}
-        </form>
+          <Form.Item>
+            <Button type="primary" htmlType="submit">保存</Button>
+            <Button type="default" style={{ marginLeft: 8 }} onClick={() => logout()}>退出登录</Button>
+          </Form.Item>
+        </Form>
       </section>
     </div>
   );

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../components/CartContext';
 import { useUser } from '../components/UserContext';
 import { addToCartRemote, purchaseNow } from '../api';
+import { Button, message, Space } from 'antd';
 import booksData from '../data/books.json';
 
 /**
@@ -32,6 +33,7 @@ const Detail = () => {
   const handleAddToCart = () => {
     addToCart(book);
     setNotice('已加入购物车，可前往购物车查看。');
+    message.success('已加入购物车');
     // 后端同步（非阻塞）：如果后端可用，这里建议将该请求改为真实 API 调用
     if (user) {
       addToCartRemote(user, book).catch(() => {
@@ -46,9 +48,11 @@ const Detail = () => {
     try {
       const resp = await purchaseNow(user, book, 1);
       setNotice(`订单已创建：${resp.orderId}`);
+      message.success(`订单已创建：${resp.orderId}`);
       // 这里可以跳转到订单页或结算成功页
     } catch (err) {
       setNotice('创建订单失败，请稍后重试。');
+      message.error('创建订单失败');
     }
   };
 
@@ -73,13 +77,11 @@ const Detail = () => {
             </div>
 
             <div className="detail-actions">
-              <button className="btn" onClick={handleAddToCart}>
-                加入购物车
-              </button>
-              <button className="btn btn-outline" onClick={handleBuyNow}>
-                立即购买
-              </button>
-              <Link to="/cart" className="btn btn-outline">查看购物车</Link>
+              <Space>
+                <Button type="primary" onClick={handleAddToCart}>加入购物车</Button>
+                <Button onClick={handleBuyNow}>立即购买</Button>
+                <Link to="/cart" className="btn btn-outline">查看购物车</Link>
+              </Space>
             </div>
             {notice ? <p className="inline-notice">{notice}</p> : null}
           </div>
