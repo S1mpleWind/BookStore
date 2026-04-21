@@ -15,6 +15,13 @@
   --shadow-md: 0 12px 30px rgba(10, 10, 10, 0.04);
 }
 
+/* 强制全局白色背景，避免在系统深色模式或滚动时出现黑色条带 */
+html,
+body,
+#root {
+  background: #ffffff;
+}
+
 * { box-sizing: border-box; }
 
 .price {
@@ -123,6 +130,7 @@ body {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
   padding: 30px;
+  background: #ffffff;
 }
 
 .main-content-login {
