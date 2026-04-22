@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from './CartContext';
+import { Button } from 'antd';
 
 /**
  * Navbar 组件：侧边栏导航栏。
@@ -56,9 +57,9 @@ const Navbar = () => {
       </ul>
 
       <div className="nav-footer">
-        <button className="btn btn-outline nav-logout" onClick={handleLogout}>
+        <Button className="nav-logout" onClick={handleLogout}>
           退出登录
-        </button>
+        </Button>
       </div>
     </nav>
   );

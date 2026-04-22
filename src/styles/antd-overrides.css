@@ -1,0 +1,53 @@
+/* 全局 AntD 美化覆盖 */
+.ant-btn {
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(100deg, var(--brand-1), var(--brand-2));
+  border-color: var(--brand-1);
+}
+
+.ant-btn-default {
+  border-color: rgba(16, 32, 61, 0.14);
+}
+
+.hero-panel .ant-input-search {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.hero-panel .ant-input,
+.hero-panel .ant-input-search-button {
+  border-radius: 12px;
+}
+
+.login-form .ant-input,
+.login-form .ant-input-affix-wrapper,
+.login-form .ant-btn {
+  border-radius: 10px;
+}
+
+.nav-logout.ant-btn {
+  width: 100%;
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-logout.ant-btn:hover {
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.36) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.card .ant-btn {
+  min-height: 38px;
+}
+
+.cart-summary .ant-btn,
+.login-submit.ant-btn {
+  width: 100%;
+}

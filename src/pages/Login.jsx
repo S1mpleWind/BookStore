@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Form, Input, Button } from 'antd';
 
 /**
  * Login 页面：模拟登录逻辑。
@@ -12,9 +13,7 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/';
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const handleSubmit = () => {
     // 免验证登录：点击登录直接进入系统
     localStorage.setItem('isLoggedIn', 'true');
     navigate(from, { replace: true });
@@ -27,31 +26,23 @@ const Login = () => {
         <h1 className="page-title">登录电子书店</h1>
         <p className="muted">默认用户名已填充，点击登录即可进入系统。</p>
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          <label htmlFor="username">用户名</label>
-          <input
-            id="username"
-            name="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="请输入用户名"
-          />
+        <Form className="login-form" layout="vertical" onFinish={handleSubmit}>
+          <Form.Item label="用户名" name="username" initialValue={username}>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="请输入用户名"
+            />
+          </Form.Item>
 
-          <label htmlFor="password">密码</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value=""
-            readOnly
-            placeholder="请输入密码"
-          />
+          <Form.Item label="密码" name="password">
+            <Input.Password placeholder="请输入密码" />
+          </Form.Item>
 
-          <button className="btn login-submit" type="submit">
+          <Button className="login-submit" type="primary" htmlType="submit">
             登录
-          </button>
-        </form>
+          </Button>
+        </Form>
       </section>
     </div>
   );

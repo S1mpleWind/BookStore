@@ -20,7 +20,7 @@
     "id": 3,
     "title": "计算机网络：自顶向下方法",
     "author": "James F. Kurose / Keith W. Ross",
-    "cover": "/src/assets/book3.svg",
+    "cover": "/src/assets/book3.png",
     "price": 109.0,
     "desc": "从应用层向下讲解计算机网络的经典教材，内容通俗并配有大量示例。",
     "recommended": true
@@ -29,7 +29,7 @@
     "id": 4,
     "title": "算法导论",
     "author": "Thomas H. Cormen 等",
-    "cover": "/src/assets/book4.svg",
+    "cover": "/src/assets/book4.png",
     "price": 199.0,
     "desc": "覆盖算法设计与分析的系统性教材，内容全面且深入，适合长期参考与学习。"
   },
@@ -37,7 +37,7 @@
     "id": 5,
     "title": "深入理解计算机系统",
     "author": "Randal E. Bryant",
-    "cover": "/src/assets/book5.svg",
+    "cover": "/src/assets/book5.png",
     "price": 129.0,
     "desc": "从软件的角度介绍计算机系统的工作原理，适合希望提升系统级观念的读者。"
   },
@@ -45,7 +45,7 @@
     "id": 6,
     "title": "现代操作系统",
     "author": "Andrew S. Tanenbaum",
-    "cover": "/src/assets/book6.svg",
+    "cover": "/src/assets/book6.png",
     "price": 118.0,
     "desc": "面向实践的操作系统教材，包含大量系统设计与实现的案例研究。"
   }

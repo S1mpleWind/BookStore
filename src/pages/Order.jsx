@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from 'antd';
 
 /**
  * Order 页面：显示刚才下单成功的书籍信息。
@@ -36,7 +37,9 @@ const Order = () => {
                 <section className="hero-panel">
                     <h1 className="page-title">暂无订单信息</h1>
                     <p className="muted">你还没有进行过结算，快去挑选心仪的书籍吧。</p>
-                    <Link to="/" className="btn">去首页逛逛</Link>
+                    <Link to="/">
+                        <Button type="primary">去首页逛逛</Button>
+                    </Link>
                 </section>
             </div>
         );
@@ -79,7 +82,9 @@ const Order = () => {
             </section>
 
             <div className="detail-actions" style={{ marginTop: '24px' }}>
-                <Link to="/" className="btn btn-outline">返回首页继续购买</Link>
+                <Link to="/">
+                    <Button>返回首页继续购买</Button>
+                </Link>
             </div>
         </div>
     );

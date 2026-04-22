@@ -10,6 +10,8 @@ import Profile from './pages/Profile';
 import { CartProvider } from './components/CartContext';
 import { UserProvider } from './components/UserContext';
 import './styles/style.css';
+import './styles/detail-actions.css';
+import './styles/antd-overrides.css';
 
 const isLoggedIn = () => {
   try {

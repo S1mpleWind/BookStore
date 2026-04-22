@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCart } from '../components/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { Button, Empty, Space } from 'antd';
 
 /**
  * Cart 页面：显示购物车内容。
@@ -37,8 +38,10 @@ const Cart = () => {
             
             {cartItems.length === 0 ? (
                 <div className="empty-state">
-                    <p className="muted">购物车目前是空的。</p>
-                    <Link to="/" className="btn">返回去逛逛</Link>
+                    <Empty description="购物车目前是空的" />
+                    <Link to="/">
+                        <Button type="primary">返回去逛逛</Button>
+                    </Link>
                 </div>
             ) : (
                 <div className="cart-layout">
@@ -55,12 +58,12 @@ const Cart = () => {
                                         <p className="price">单价：¥{(item.price || 0).toFixed(2)}</p>
                                         <div className="qty-controls">
                                             <span>数量：</span>
-                                            <button onClick={() => updateQuantity(item.id, -1)} className="btn btn-sm">-</button>
+                                            <Button size="small" onClick={() => updateQuantity(item.id, -1)}>-</Button>
                                             <span className="qty-value">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.id, 1)} className="btn btn-sm">+</button>
+                                            <Button size="small" onClick={() => updateQuantity(item.id, 1)}>+</Button>
                                         </div>
                                         <div className="detail-actions">
-                                            <button onClick={() => removeFromCart(item.id)} className="btn btn-danger">移除</button>
+                                            <Button danger onClick={() => removeFromCart(item.id)}>移除</Button>
                                         </div>
                                     </div>
                                 </div>
@@ -84,7 +87,7 @@ const Cart = () => {
                             <span>总计</span>
                             <strong>¥{totalPrice.toFixed(2)}</strong>
                         </div>
-                        <button onClick={handleCheckout} className="btn">确认下单并结算</button>
+                        <Button type="primary" onClick={handleCheckout}>确认下单并结算</Button>
                     </aside>
                 </div>
             )}

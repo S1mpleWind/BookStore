@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { Input, Button } from 'antd';
 import booksData from '../data/books.json';
 
 /**
@@ -7,15 +8,29 @@ import booksData from '../data/books.json';
  * 数据重用自 hw1 的 JSON 格式。
  */
 const Home = () => {
-  const recommended = booksData.filter((b) => b.recommended);
-  const others = booksData.filter((b) => !b.recommended);
+  const [q, setQ] = useState('');
 
+  const recommended = useMemo(() => booksData.filter((b) => b.recommended), []);
+  const filtered = useMemo(() => {
+    if (!q) return booksData;
+    const key = q.trim().toLowerCase();
+    return booksData.filter((b) => (b.title + ' ' + b.author).toLowerCase().includes(key));
+  }, [q]);
   return (
     <div className="content-inner">
       <section className="hero-panel">
         <p className="hero-kicker">CURATED BOOKSHELF</p>
         <h1 className="page-title">精选经典教材</h1>
-        <p className="hero-desc">从操作系统到计算机系统结构，聚焦计算机科学基础能力建设。</p>
+        
+        <div style={{ margin: '14px auto 0', maxWidth: 560 }}>
+          <Input.Search
+            placeholder="搜索书名或作者"
+            allowClear
+            enterButton
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
       </section>
 
       <section className="catalog-shell" aria-label="推荐与书籍列表区域">
@@ -37,7 +52,9 @@ const Home = () => {
                   <p className="muted">{book.author}</p>
                   <p className="price">¥{book.price.toFixed(2)}</p>
                   <div className="card-actions">
-                    <Link to={`/book/${book.id}`} className="btn">查看详情</Link>
+                    <Link to={`/book/${book.id}`}>
+                      <Button type="primary">查看详情</Button>
+                    </Link>
                   </div>
                 </div>
               </article>
@@ -47,11 +64,11 @@ const Home = () => {
 
         <div className="section-head" style={{ marginTop: 16 }}>
           <h2>全部书籍</h2>
-          <p className="muted">点击查看详情</p>
+          <p className="muted">共 {filtered.length} 本 · 点击查看详情</p>
         </div>
 
         <div className="book-list" aria-label="书籍列表">
-          {booksData.map((book) => (
+          {filtered.map((book) => (
             <article className="card" key={book.id}>
               <figure className="book-cover-wrap">
                 <img src={book.cover} alt={book.title} />
@@ -62,7 +79,9 @@ const Home = () => {
                 <p className="price">¥{book.price.toFixed(2)}</p>
               </div>
               <div className="card-actions">
-                <Link to={`/book/${book.id}`} className="btn">查看详情</Link>
+                <Link to={`/book/${book.id}`}>
+                  <Button type="primary">查看详情</Button>
+                </Link>
               </div>
             </article>
           ))}
