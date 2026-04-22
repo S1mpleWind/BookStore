@@ -51,7 +51,7 @@ const Home = () => {
         </div>
 
         <div className="book-list" aria-label="书籍列表">
-          {(others.length === 0 ? booksData : others).map((book) => (
+          {booksData.map((book) => (
             <article className="card" key={book.id}>
               <figure className="book-cover-wrap">
                 <img src={book.cover} alt={book.title} />
