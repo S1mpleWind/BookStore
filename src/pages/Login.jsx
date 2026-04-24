@@ -25,7 +25,8 @@ const Login = () => {
         <p className="hero-kicker">WELCOME BACK</p>
         <h1 className="page-title">登录电子书店</h1>
         <p className="muted">默认用户名已填充，点击登录即可进入系统。</p>
-
+        
+        {/* 使用 Ant Design Form 组件 */}
         <Form className="login-form" layout="vertical" onFinish={handleSubmit}>
           <Form.Item label="用户名" name="username" initialValue={username}>
             <Input

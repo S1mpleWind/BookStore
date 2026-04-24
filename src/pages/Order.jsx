@@ -20,6 +20,7 @@ const Order = () => {
             if (!parsed || !Array.isArray(parsed.items)) return;
 
             //重新渲染订单信息
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setOrderInfo({
                 id: parsed.id || 'N/A',
                 items: parsed.items,

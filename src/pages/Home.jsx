@@ -11,11 +11,14 @@ const Home = () => {
   const [q, setQ] = useState('');
 
   const recommended = useMemo(() => booksData.filter((b) => b.recommended), []);
+
+  // 寻找搜索的书籍，对全局变量q进行查找
   const filtered = useMemo(() => {
     if (!q) return booksData;
     const key = q.trim().toLowerCase();
     return booksData.filter((b) => (b.title + ' ' + b.author).toLowerCase().includes(key));
   }, [q]);
+
   return (
     <div className="content-inner">
       <section className="hero-panel">
@@ -33,6 +36,7 @@ const Home = () => {
         </div>
       </section>
 
+      {/*推荐书单*/}
       <section className="catalog-shell" aria-label="推荐与书籍列表区域">
         <div className="section-head">
           <h2>推荐书单</h2>
@@ -41,6 +45,7 @@ const Home = () => {
 
         {recommended && recommended.length > 0 && (
           <div className="featured-list" aria-label="推荐书籍">
+            {/* 使用map来循环列表 */}
             {recommended.map((book) => (
               <article className="card" key={book.id}>
                 <figure className="book-cover-wrap">
@@ -68,6 +73,7 @@ const Home = () => {
         </div>
 
         <div className="book-list" aria-label="书籍列表">
+          {/*  */}
           {filtered.map((book) => (
             <article className="card" key={book.id}>
               <figure className="book-cover-wrap">
