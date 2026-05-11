@@ -42,7 +42,7 @@ export const CartProvider = ({ children }) => {
     try {
       localStorage.setItem('cart', JSON.stringify(cartItems));
     } catch (error) {
-      // 忽略存储失败，避免影响页面渲染
+      // 忽略本地的
     }
   }, [cartItems]);
 

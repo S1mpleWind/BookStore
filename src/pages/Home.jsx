@@ -13,6 +13,7 @@ const Home = () => {
   const recommended = useMemo(() => booksData.filter((b) => b.recommended), []);
 
   // 寻找搜索的书籍，对全局变量q进行查找
+  // 使用 useMemo 来缓存过滤结果，避免每次渲染都进行过滤计算,可以复用
   const filtered = useMemo(() => {
     if (!q) return booksData;
     const key = q.trim().toLowerCase();
@@ -67,6 +68,8 @@ const Home = () => {
           </div>
         )}
 
+
+        {/*全部的书单*/}
         <div className="section-head" style={{ marginTop: 16 }}>
           <h2>全部书籍</h2>
           <p className="muted">共 {filtered.length} 本 · 点击查看详情</p>

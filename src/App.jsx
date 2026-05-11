@@ -21,6 +21,7 @@ const isLoggedIn = () => {
   }
 };
 
+//统一做登录的拦截
 const ProtectedRoute = ({ children }) => {
   const location = useLocation();
 
@@ -30,6 +31,7 @@ const ProtectedRoute = ({ children }) => {
 
   return children;
 };
+
 
 const AppRoutes = ({ selectedBook, setSelectedBook }) => {
   const location = useLocation();
