@@ -28,15 +28,19 @@
 
 ### 2. 数据库设计与配置 [进行中 🏗️]
 - [ ] 在 MySQL 中创建数据库 `bookstore`。
-- [x] 在 `application.properties` 中预配置了连接串（请根据你的实际密码修改）。
+- [x] 在 `application.properties` 中预配置了连接串。
+- [ ] 参考示例代码引入 `Book` 和 `User` 实体映射。
 
-### 3. 数据层 (Domain & Repository)
-- [ ] **Entity (实体类)**: 
-    - 创建 `Book` 和 `User` 类。
-    - 学习使用 `@Entity`, `@Id`, `@GeneratedValue`, `@Column`。
-- [ ] **Repository (仓库层)**: 
-    - 创建 `BookRepository` 和 `UserRepository` 接口。
-    - 继承 `JpaRepository<T, ID>`。
+### 3. 后端开发思路 (基于示例工程)
+- **实体层 (Entity)**: 使用 JPA 注解将 Java 对象与数据库表一一对应。
+- **仓库层 (Repository)**: 继承 `JpaRepository`，实现零代码 CRUD。
+- **控制层 (Controller)**: 定义 REST 接口，处理 JSON 数据的输入输出。
+
+## 🔗 第三阶段：前后端集成方案
+### 1. 前端变动点
+- **`api.js`**: 将 `import books from './data/books.json'` 替换为 `fetch('http://localhost:8080/api/v1/books')`。
+- **生命周期**: 在 `Home` 和 `Detail` 组件的 `useEffect` 中异步获取后端数据。
+- **数据结构**: 确保后端返回的 JSON 字段名（如 `price`）与 React 前端使用的字段名完全一致。
 
 ### 4. 业务层 (Service & Controller)
 - [ ] **Controller (控制层)**: 映射 URL 路径。
