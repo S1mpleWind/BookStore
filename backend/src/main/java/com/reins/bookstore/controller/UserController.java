@@ -1,10 +1,15 @@
 package com.reins.bookstore.controller;
 
 import com.reins.bookstore.entity.User;
+import com.reins.bookstore.entity.UserAuth;
+import com.reins.bookstore.repository.UserAuthRepository;
 import com.reins.bookstore.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/users")

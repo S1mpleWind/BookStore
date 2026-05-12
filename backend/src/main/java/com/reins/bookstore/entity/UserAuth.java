@@ -1,5 +1,9 @@
 package com.reins.bookstore.entity;
 
+/*
+使用Auth将基本信息与敏感信息分离
+ */
+
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
