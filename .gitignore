@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+backend/target/
+frontend/node_modules/
+frontend/dist/
+.idea/
+*.class
+*.log
+.DS_Store
