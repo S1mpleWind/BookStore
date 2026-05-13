@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Button, Spin, Empty } from 'antd';
-import { getBookById } from '../api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Button, Spin, Empty, message, InputNumber } from 'antd';
+import { getBookById, addToCart } from '../api';
+import { useUser } from '../components/UserContext';
 
 /**
  * Detail 页面：根据 URL 参数 id 从后端加载并显示书籍详细信息。
  */
 const Detail = () => {
   const { id } = useParams();
-  const [notice, setNotice] = useState('');
+  const navigate = useNavigate();
+  const { user } = useUser();
+  const [quantity, setQuantity] = useState(1);
   const [bookState, setBookState] = useState({ requestId: null, book: null, error: '' });
 
   useEffect(() => {
@@ -24,6 +27,40 @@ const Detail = () => {
 
   const { requestId, book, error } = bookState;
   const loading = requestId !== id;
+
+  const handleAddToCart = async () => {
+    if (!user?.userId) {
+      message.warning('请先登录');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await addToCart(user.userId, book.id, quantity);
+      message.success('已添加到购物车');
+        message.success(`已添加 ${quantity} 本《${book.title}》到购物车`);
+      setQuantity(1);
+    } catch (err) {
+      message.error('添加到购物车失败');
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!user?.userId) {
+      message.warning('请先登录');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // 先添加到购物车，再跳转到购物车页面
+      await addToCart(user.userId, book.id, quantity);
+      message.success(`已添加到购物车，请前往结算`);
+      navigate('/cart');
+    } catch (err) {
+      message.error('操作失败');
+    }
+  };
 
   if (loading) {
     return (
@@ -45,11 +82,6 @@ const Detail = () => {
   const priceText = (Number(book.price || 0) / 100).toFixed(2);
   const description = book.desc || book.description || '这本书还没有详细描述。';
 
-  //TODO:
-  const handleNoop = () => {
-    setNotice('该按钮暂不接入后端处理。');
-  };
-
   return (
     <div className="content-inner">
       <Link to="/" className="back">← 返回列表</Link>
@@ -64,6 +96,16 @@ const Detail = () => {
               <h2>{book.title}</h2>
               <p className="muted">作者：{book.author}</p>
               <p className="price-large">¥{priceText}</p>
+              <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+                <span>数量: </span>
+                <InputNumber 
+                  min={1} 
+                  max={999} 
+                  value={quantity} 
+                  onChange={setQuantity}
+                  style={{ width: '100px' }}
+                />
+              </div>
             </div>
 
             <div className="detail-copy">
@@ -76,14 +118,12 @@ const Detail = () => {
       {/* 独立操作区：加入购物车（次要）、立即购买（主色）、查看购物车（次要） */}
       <div className="detail-actions separate">
         <div className="action-left">
-          <Button type="default" className="btn-left" onClick={handleNoop} aria-label="加入购物车">加入购物车</Button>
+          <Button type="default" className="btn-left" onClick={handleAddToCart} aria-label="加入购物车">加入购物车</Button>
         </div>
         <div className="action-right">
-          <Button type="primary" className="btn-right" onClick={handleNoop} aria-label="立即购买">立即购买</Button>
+          <Button type="primary" className="btn-right" onClick={handleBuyNow} aria-label="立即购买">立即购买</Button>
         </div>
       </div>
-
-      {notice ? <p className="inline-notice">{notice}</p> : null}
     </div>
   );
 };

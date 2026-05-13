@@ -55,22 +55,39 @@ export async function getBookById(id) {
 }
 
 async function postJson(url, payload) {
+  console.debug('[api] POST', url, payload);
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(errorText || 'Request failed');
+  const contentType = response.headers.get('content-type') || '';
+  let data = null;
+  
+  if (contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    data = await response.text();
   }
 
-  const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return await response.json();
+  console.debug('[api] response', url, {
+    ok: response.ok,
+    status: response.status,
+    contentType,
+    data,
+  });
+
+  if (!response.ok) {
+    // 如果返回的是JSON对象且包含error字段，抛出error消息
+    if (typeof data === 'object' && data.error) {
+      throw new Error(JSON.stringify({ status: response.status, error: data.error, data }));
+    }
+    // 否则抛出通用错误消息，包含状态码与返回体，便于前端调试
+    throw new Error(JSON.stringify({ status: response.status, data }));
   }
-  return await response.text();
+
+  return data;
 }
 
 export async function loginUser(credentials) {
@@ -79,6 +96,80 @@ export async function loginUser(credentials) {
 
 export async function registerUser(profile) {
   return postJson('http://localhost:8080/api/v1/users/register', profile);
+}
+
+/**
+ * 获取用户的购物车
+ */
+export async function getCart(userId) {
+  const response = await fetch(`http://localhost:8080/api/v1/cart/${userId}`);
+  if (!response.ok) throw new Error('Failed to fetch cart');
+  return await response.json();
+}
+
+/**
+ * 添加商品到购物车
+ */
+export async function addToCart(userId, bookId, quantity = 1) {
+  return postJson('http://localhost:8080/api/v1/cart', {
+    userId,
+    bookId,
+    quantity
+  });
+}
+
+/**
+ * 更新购物车项的数量
+ */
+export async function updateCartItem(cartItemId, quantity) {
+  const response = await fetch(`http://localhost:8080/api/v1/cart/${cartItemId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quantity })
+  });
+  if (!response.ok) throw new Error('Failed to update cart item');
+  return await response.json();
+}
+
+/**
+ * 删除购物车项
+ */
+export async function deleteCartItem(cartItemId) {
+  const response = await fetch(`http://localhost:8080/api/v1/cart/${cartItemId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Failed to delete cart item');
+  return await response.json();
+}
+
+/**
+ * 清空购物车
+ */
+export async function clearCart(userId) {
+  const response = await fetch(`http://localhost:8080/api/v1/cart/user/${userId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) throw new Error('Failed to clear cart');
+  return await response.json();
+}
+
+/**
+ * 获取用户的订单列表
+ */
+export async function getOrders(userId) {
+  console.debug('[api] GET orders', userId);
+  const response = await fetch(`http://localhost:8080/api/v1/orders/${userId}`);
+  if (!response.ok) throw new Error('Failed to fetch orders');
+  const data = await response.json();
+  console.debug('[api] GET orders response', data);
+  return data;
+}
+
+/**
+ * 创建订单
+ */
+export async function createOrder(orderData) {
+  return postJson('http://localhost:8080/api/v1/orders', orderData);
 }
 
 /**

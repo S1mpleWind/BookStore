@@ -32,11 +32,11 @@ public class UserController {
         String nickname = params.get("nickname");
 
         if (username == null || password == null) {
-            return ResponseEntity.badRequest().body("Username and password are required");
+            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
 
         if (userAuthRepository.findByUsername(username) != null) {
-            return ResponseEntity.badRequest().body("Username already exists");
+            return ResponseEntity.badRequest().body(Map.of("error", "Username already exists"));
         }
 
         // 1. 创建并保存基本用户信息
@@ -53,7 +53,7 @@ public class UserController {
         userAuth.setIdentity(0); // 默认普通用户
         userAuthRepository.save(userAuth);
 
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
     @PostMapping("/login")
@@ -62,21 +62,21 @@ public class UserController {
         String password = params.get("password");
 
         if (username == null || password == null) {
-            return ResponseEntity.badRequest().body("Username and password are required");
+            return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
 
         UserAuth userAuth = userAuthRepository.findByUsername(username);
         if (userAuth == null) {
-            return ResponseEntity.status(404).body("Username not found");
+            return ResponseEntity.status(404).body(Map.of("error", "Username not found"));
         }
 
         if (!password.equals(userAuth.getPassword())) {
-            return ResponseEntity.status(401).body("Incorrect password");
+            return ResponseEntity.status(401).body(Map.of("error", "Incorrect password"));
         }
 
         User user = userRepository.findById(userAuth.getUserId()).orElse(null);
         if (user == null) {
-            return ResponseEntity.status(404).body("User profile not found");
+            return ResponseEntity.status(404).body(Map.of("error", "User profile not found"));
         }
 
         return ResponseEntity.ok(Map.of(
