@@ -40,7 +40,7 @@ export async function saveUserProfile(profile) {
  */
 //? modify the port num here if needed
 export async function getBooks() {
-  const response = await fetch('http://localhost:8080/api/v1/books');
+  const response = await fetch('http://localhost:8080/api/v1/book');
   if (!response.ok) throw new Error('Failed to fetch books');
   return await response.json();
 }
