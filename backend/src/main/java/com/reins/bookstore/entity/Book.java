@@ -5,9 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "books")
+@Table(name = "book")
 @Data
 @NoArgsConstructor
+
+// use single form
 public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
+// controller + responce body 返回值都会自动序列化成 JSON，直接写入 HTTP 响应体返回给前端
 @RequestMapping("/api/v1/users")
 @CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
