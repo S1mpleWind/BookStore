@@ -36,6 +36,25 @@ export async function saveUserProfile(profile) {
 }
 
 /**
+ * 从后端获取所有书籍列表
+ */
+//? modify the port num here if needed
+export async function getBooks() {
+  const response = await fetch('http://localhost:8080/api/v1/books');
+  if (!response.ok) throw new Error('Failed to fetch books');
+  return await response.json();
+}
+
+/**
+ * 从后端获取指定 ID 的书籍详情
+ */
+export async function getBookById(id) {
+  const response = await fetch(`http://localhost:8080/api/v1/book/${id}`);
+  if (!response.ok) throw new Error('Failed to fetch book detail');
+  return await response.json();
+}
+
+/**
  * 将商品加入用户的远端购物车（非必需）
  *
  * API 设计建议：
