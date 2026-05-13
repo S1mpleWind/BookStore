@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from './CartContext';
+import { useUser } from './UserContext';
 import { Button } from 'antd';
 
 /**
@@ -10,15 +11,12 @@ import { Button } from 'antd';
  */
 const Navbar = () => {
   const { cartItems } = useCart();
+  const { logout } = useUser();
   const totalCount = cartItems.reduce((acc, item) => acc + (item.quantity || 0), 0);
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem('isLoggedIn');
-    } catch (error) {
-      // 忽略 localStorage 异常，继续导航
-    }
+    logout();
     navigate('/login', { replace: true });
   };
 

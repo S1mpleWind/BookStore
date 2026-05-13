@@ -54,6 +54,33 @@ export async function getBookById(id) {
   return await response.json();
 }
 
+async function postJson(url, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || 'Request failed');
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return await response.json();
+  }
+  return await response.text();
+}
+
+export async function loginUser(credentials) {
+  return postJson('http://localhost:8080/api/v1/users/login', credentials);
+}
+
+export async function registerUser(profile) {
+  return postJson('http://localhost:8080/api/v1/users/register', profile);
+}
+
 /**
  * 将商品加入用户的远端购物车（非必需）
  *

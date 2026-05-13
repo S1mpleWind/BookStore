@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+
 @RestController
 // controller + responce body 返回值都会自动序列化成 JSON，直接写入 HTTP 响应体返回给前端
 @RequestMapping("/api/v1/users")
@@ -53,5 +54,36 @@ public class UserController {
         userAuthRepository.save(userAuth);
 
         return ResponseEntity.ok("User registered successfully");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> params) {
+        String username = params.get("username");
+        String password = params.get("password");
+
+        if (username == null || password == null) {
+            return ResponseEntity.badRequest().body("Username and password are required");
+        }
+
+        UserAuth userAuth = userAuthRepository.findByUsername(username);
+        if (userAuth == null) {
+            return ResponseEntity.status(404).body("Username not found");
+        }
+
+        if (!password.equals(userAuth.getPassword())) {
+            return ResponseEntity.status(401).body("Incorrect password");
+        }
+
+        User user = userRepository.findById(userAuth.getUserId()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(404).body("User profile not found");
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "userId", user.getId(),
+                "username", userAuth.getUsername(),
+                "nickname", user.getNickname(),
+                "identity", userAuth.getIdentity()
+        ));
     }
 }

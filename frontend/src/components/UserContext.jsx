@@ -24,11 +24,16 @@ export const UserProvider = ({ children }) => {
     }
   }, [user]);
 
-  const login = ({ name, email } = {}) => {
+  const login = (payload = {}) => {
     const next = {
-      name: name || 'Guest',
-      email: email || '',
+      userId: payload.userId ?? payload.id ?? null,
+      username: payload.username || '',
+      nickname: payload.nickname || payload.name || 'Guest',
+      name: payload.nickname || payload.name || 'Guest',
+      email: payload.email || '',
+      identity: payload.identity ?? 0,
       lastLogin: Date.now(),
+      ...payload,
     };
     setUser(next);
     try { localStorage.setItem('isLoggedIn', 'true'); } catch (e) {}
