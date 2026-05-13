@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Button, Spin, Empty, message, InputNumber } from 'antd';
+import { Button, Spin, Empty, InputNumber, App } from 'antd';
 import { getBookById, addToCart } from '../api';
 import { useUser } from '../components/UserContext';
 
@@ -11,6 +11,8 @@ const Detail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useUser();
+  const { message } = App.useApp();
+  //? 需要用这个才能调用message
   const [quantity, setQuantity] = useState(1);
   const [bookState, setBookState] = useState({ requestId: null, book: null, error: '' });
 
@@ -36,11 +38,14 @@ const Detail = () => {
     }
 
     try {
+      console.log('[handleAddToCart] 开始添加到购物车', { userId: user.userId, bookId: book.id, quantity });
       await addToCart(user.userId, book.id, quantity);
-      message.success('已添加到购物车');
-        message.success(`已添加 ${quantity} 本《${book.title}》到购物车`);
+      console.log('[handleAddToCart] 成功');
+
+      message.success(`已添加 ${quantity} 本《${book.title}》到购物车`);
       setQuantity(1);
     } catch (err) {
+      console.error('[handleAddToCart] 失败:', err);
       message.error('添加到购物车失败');
     }
   };

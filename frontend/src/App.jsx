@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { App as AntdApp, ConfigProvider } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Detail from './pages/Detail';
@@ -92,18 +94,24 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
 /**
  * App 组件：以 hw1 为基础重构。
  * 引入 CartProvider 管理全局购物车状态。
+ * 使用 ConfigProvider + AntdApp 包装以支持全局 message/modal/notification
  */
 const App = () => {
   const [selectedBook, setSelectedBook] = useState(null);
 
+  //？需要添加antD来enable message
   return (
-    <UserProvider>
-      <CartProvider>
-        <BrowserRouter>
-          <AppRoutes selectedBook={selectedBook} setSelectedBook={setSelectedBook} />
-        </BrowserRouter>
-      </CartProvider>
-    </UserProvider>
+    <ConfigProvider locale={zhCN}>
+      <AntdApp>
+        <UserProvider>
+          <CartProvider>
+            <BrowserRouter>
+              <AppRoutes selectedBook={selectedBook} setSelectedBook={setSelectedBook} />
+            </BrowserRouter>
+          </CartProvider>
+        </UserProvider>
+      </AntdApp>
+    </ConfigProvider>
   );
 };
 

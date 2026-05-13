@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button, Spin, Empty, message, Alert } from 'antd';
+import { Button, Spin, Empty, Alert, App } from 'antd';
 import { useUser } from '../components/UserContext';
 import { getOrders } from '../api';
 
@@ -10,6 +10,7 @@ import { getOrders } from '../api';
 const Order = () => {
     const { user } = useUser();
     const location = useLocation();
+    const { message } = App.useApp();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
     const [debugLines, setDebugLines] = useState([]);

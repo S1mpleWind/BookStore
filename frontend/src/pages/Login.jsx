@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Form, Input, Button, Tabs, message, Alert } from 'antd';
+import { Form, Input, Button, Tabs, Alert, App } from 'antd';
 import { loginUser, registerUser } from '../api';
 import { useUser } from '../components/UserContext';
 
@@ -12,6 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useUser();
+  const { message } = App.useApp();
   const [activeTab, setActiveTab] = useState('login');
   const [loginForm] = Form.useForm();
   const [registerForm] = Form.useForm();

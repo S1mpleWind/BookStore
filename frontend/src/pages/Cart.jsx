@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useUser } from '../components/UserContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Empty, Spin, message } from 'antd';
+import { Button, Empty, Spin, Modal, Input, App } from 'antd';
 import { getCart, deleteCartItem, updateCartItem, getBookById, createOrder, clearCart } from '../api';
 
 /**
@@ -11,9 +11,14 @@ import { getCart, deleteCartItem, updateCartItem, getBookById, createOrder, clea
 const Cart = () => {
     const { user } = useUser();
     const navigate = useNavigate();
+    const { message } = App.useApp();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
     const [debugLines, setDebugLines] = useState([]);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [receiverInput, setReceiverInput] = useState('');
+    const [addressInput, setAddressInput] = useState('东川路800号');
+    const [telInput, setTelInput] = useState('123456789');
 
     const debug = false
 
@@ -105,18 +110,24 @@ const Cart = () => {
             return;
         }
 
-        pushDebug(`点击结算，cartItems=${cartItems.length}, totalCount=${totalCount}, totalPrice=${totalPrice.toFixed(2)}`);
-        const confirmed = window.confirm(`当前订单共 ${totalCount} 件商品，合计 ¥${totalPrice.toFixed(2)}。确认后将创建订单并跳转到订单页。`);
-        pushDebug(`确认弹窗结果：${confirmed ? '确认' : '取消'}`);
+        // 初始化弹窗的默认值
+        setReceiverInput(user?.nickname || user?.username || '未填写');
+        setAddressInput('东川路800号');
+        setTelInput('123456789');
+        setShowConfirmModal(true);
+        pushDebug(`打开确认弹窗，默认 receiver=${user?.nickname || user?.username}, address=东川路800号, tel=123456789`);
+    };
 
-        if (!confirmed) return;
+    const submitOrderFromModal = async () => {
+        setShowConfirmModal(false);
+        pushDebug(`用户确认弹窗：receiver=${receiverInput}, address=${addressInput}, tel=${telInput}`);
 
         try {
             const orderPayload = {
                 userId: user.userId,
-                receiver: user.nickname || user.username || '未填写',
-                address: '未填写',
-                tel: '未填写',
+                receiver: receiverInput,
+                address: addressInput,
+                tel: telInput,
             };
 
             pushDebug(`准备调用 createOrder，payload=${JSON.stringify(orderPayload)}`);
@@ -126,7 +137,7 @@ const Cart = () => {
 
             navigate('/order', {
                 state: {
-                    flashMessage: '订单已生成，请前往订单页查看',
+                    flashMessage: '订单已生成，请查看',
                 },
             });
 
@@ -224,6 +235,27 @@ const Cart = () => {
                     </aside>
                 </div>
             )}
+            <Modal
+                open={showConfirmModal}
+                title="确认订单"
+                onOk={submitOrderFromModal}
+                onCancel={() => setShowConfirmModal(false)}
+                okText="确认并下单"
+                cancelText="取消"
+            >
+                <div style={{ marginBottom: 12 }}>
+                    <div style={{ marginBottom: 6, fontWeight: 600 }}>收货人</div>
+                    <Input value={receiverInput} onChange={(e) => setReceiverInput(e.target.value)} />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                    <div style={{ marginBottom: 6, fontWeight: 600 }}>收货地址</div>
+                    <Input value={addressInput} onChange={(e) => setAddressInput(e.target.value)} />
+                </div>
+                <div>
+                    <div style={{ marginBottom: 6, fontWeight: 600 }}>联系电话</div>
+                    <Input value={telInput} onChange={(e) => setTelInput(e.target.value)} />
+                </div>
+            </Modal>
         </div>
     );
 };
