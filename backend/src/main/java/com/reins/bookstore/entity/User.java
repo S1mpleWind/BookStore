@@ -4,39 +4,19 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Entity                 //映射成表
-@Table(name = "user")   //表名
+/**
+ * User 实体类映射数据库中的 user 表
+ * 存储用户的非敏感基本信息，如昵称和余额
+ */
+@Entity
+@Table(name = "user")
 @Data
 @NoArgsConstructor
 public class User {
-    @Id // "这是主键"
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nickname;
-    private Long balance = 0L;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
-    public Long getBalance() {
-        return balance;
-    }
-
-    public void setBalance(Long balance) {
-        this.balance = balance;
-    }
+    private String nickname; // 用户昵称
+    private Long balance = 0L; // 账户余额（单位：分）
 }

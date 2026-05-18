@@ -1,33 +1,42 @@
 package com.reins.bookstore.controller;
 
 import com.reins.bookstore.entity.Book;
-import com.reins.bookstore.repository.BookRepository;
+import com.reins.bookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * BookController 是书籍模块的控制层
+ * 负责接收前端关于书籍列表和书籍详情的 HTTP 请求
+ */
 @RestController
 @RequestMapping("/api/v1")
 @CrossOrigin(origins = "http://localhost:5173")
 public class BookController {
 
     @Autowired
-    private BookRepository bookRepository;
+    private BookService bookService;
 
+    /**
+     * 获取所有书籍列表
+     * @return 包含所有书籍对象的列表
+     */
     @GetMapping("/book")
     public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+        return bookService.findAll();
     }
 
+    /**
+     * 根据 ID 获取单本书籍的详情
+     * @param id 书籍的唯一标识
+     * @return 如果找到则返回书籍对象及 200 状态码，否则返回 404
+     */
     @GetMapping("/book/{id}")
     public ResponseEntity<Book> getBookById(@PathVariable Long id) {
-        return bookRepository.findById(id)
+        return bookService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
