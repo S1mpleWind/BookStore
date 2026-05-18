@@ -12,12 +12,12 @@ import java.util.List;
  * BookController 是书籍模块的控制层
  * 负责接收前端关于书籍列表和书籍详情的 HTTP 请求
  */
-@RestController
-@RequestMapping("/api/v1")
-@CrossOrigin(origins = "http://localhost:5173")
+@RestController             // controller + response body
+@RequestMapping("/api/v1")  //该controller内所有api的前缀
+@CrossOrigin(origins = "http://localhost:5173") // enable CORS
 public class BookController {
 
-    @Autowired
+    @Autowired //IoC annotation
     private BookService bookService;
 
     /**

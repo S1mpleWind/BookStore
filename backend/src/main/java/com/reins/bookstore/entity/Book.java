@@ -8,9 +8,13 @@ import lombok.NoArgsConstructor;
  * Book 实体类映射数据库中的 book 表
  * 包含了书籍的基本信息如标题、作者、价格等
  */
+
+// JPA annotation
 @Entity
 @Table(name = "book")
-@Data
+
+// Lombok annotation
+@Data // 自动生成五种annotation
 @NoArgsConstructor
 public class Book {
     @Id
