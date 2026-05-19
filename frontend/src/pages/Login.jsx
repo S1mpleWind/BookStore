@@ -24,6 +24,7 @@ const Login = () => {
     setAuthError('');
     try {
       const user = await loginUser(values);
+      // 传入fetch api得到的对象
       login(user);
       message.success('登录成功');
       navigate(from, { replace: true });

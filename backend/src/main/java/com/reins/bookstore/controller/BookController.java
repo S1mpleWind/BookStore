@@ -38,6 +38,7 @@ public class BookController {
     public ResponseEntity<Book> getBookById(@PathVariable Long id) {
         return bookService.findById(id)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.notFound().build()); /*返回Java对象的时候 @ResponseBody 触发 Spring 的消息转换器，
+                                                            调用底层的 jackson*/
     }
 }

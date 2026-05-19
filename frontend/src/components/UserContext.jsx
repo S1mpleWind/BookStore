@@ -35,6 +35,8 @@ export const UserProvider = ({ children }) => {
       lastLogin: Date.now(),
       ...payload,
     };
+
+    // 对象是引用类型，修改地址之后触发重新渲染
     setUser(next);
     try { localStorage.setItem('isLoggedIn', 'true'); } catch (e) {}
   };
@@ -58,6 +60,7 @@ export const UserProvider = ({ children }) => {
   );
 };
 
+// 暴露自定义的hook函数给login.jsx和cart.jsx，order.jsx使用
 export const useUser = () => useContext(UserContext);
 
 export default UserContext;
