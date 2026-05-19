@@ -8,7 +8,7 @@ async function postJson(url, payload) {
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload), //? transform a Java object into a JSON string
   });
 
   const contentType = response.headers.get('content-type') || '';
