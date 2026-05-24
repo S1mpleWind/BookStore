@@ -54,6 +54,7 @@ create table cart_item
         foreign key (user_id) references user (id)
 );
 
+-- modify a table --
 alter table cart_item
     add constraint uk_cart_item_user_book unique (user_id, book_id);
 

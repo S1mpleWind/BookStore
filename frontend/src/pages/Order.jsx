@@ -31,8 +31,15 @@ const Order = () => {
         setLoading(true);
         try {
             const result = await getOrders(user.userId);
-            pushDebug(`getOrders 返回，orders=${Array.isArray(result.orders) ? result.orders.length : 'invalid'}`);
-            if (result.orders && Array.isArray(result.orders)) {
+            pushDebug(`getOrders 返回，orders=${Array.isArray(result) ? result.length : 'invalid'}`);
+            if (Array.isArray(result)) {
+                if (result.length > 0) {
+                    setOrders(result);
+                    pushDebug(`已显示后端订单 ${result.length} 条`);
+                    return;
+                }
+            } else if (result.orders && Array.isArray(result.orders)) {
+                // 兼容可能包装了一层的结构
                 if (result.orders.length > 0) {
                     setOrders(result.orders);
                     pushDebug(`已显示后端订单 ${result.orders.length} 条`);

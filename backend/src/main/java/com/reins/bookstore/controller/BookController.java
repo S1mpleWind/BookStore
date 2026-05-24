@@ -14,7 +14,7 @@ import java.util.List;
  */
 @RestController             // controller + response body
 @RequestMapping("/api/v1")  //该controller内所有api的前缀
-@CrossOrigin(origins = "http://localhost:5173") // enable CORS
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true") // enable CORS
 public class BookController {
 
     @Autowired //IoC annotation

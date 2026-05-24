@@ -20,6 +20,21 @@ const Login = () => {
 
   const from = location.state?.from?.pathname || '/';
 
+  const parseErrorMessage = (error, defaultMsg) => {
+    try {
+      const body = JSON.parse(error.message);
+      const rawError = body.error || body.data?.error || '';
+      const mapping = {
+        'Invalid username or password': '用户名或密码错误',
+        'Username already exists': '用户名、昵称已存在',
+        'User profile not found': '用户信息缺失'
+      };
+      return mapping[rawError] || rawError || defaultMsg;
+    } catch (e) {
+      return error.message || defaultMsg;
+    }
+  };
+
   const handleLogin = async (values) => {
     setAuthError('');
     try {
@@ -29,8 +44,9 @@ const Login = () => {
       message.success('登录成功');
       navigate(from, { replace: true });
     } catch (error) {
-      const errorText = error?.message || '登录失败';
-      setAuthError(errorText.includes('Incorrect password') ? '密码错误，请重新输入' : errorText);
+      // 增加了解析json错误信息的函数
+      const errorText = parseErrorMessage(error, '登录失败');
+      setAuthError(errorText);
       message.error(errorText);
     }
   };
@@ -44,8 +60,8 @@ const Login = () => {
       message.success('注册成功，已自动登录');
       navigate(from, { replace: true });
     } catch (error) {
-      const errorText = error?.message || '注册失败';
-      setAuthError(errorText.includes('Username already exists') ? '用户名已存在' : errorText);
+      const errorText = parseErrorMessage(error, '注册失败');
+      setAuthError(errorText);
       message.error(errorText);
     }
   };
