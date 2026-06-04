@@ -1,5 +1,6 @@
 package com.reins.bookstore.service.impl;
 
+import com.reins.bookstore.dto.response.UserLoginResponse;
 import com.reins.bookstore.entity.User;
 import com.reins.bookstore.entity.UserAuth;
 import com.reins.bookstore.repository.UserAuthRepository;
@@ -53,25 +54,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Map<String, Object> login(String username, String password) {
-        Map<String, Object> res = new HashMap<>();
-        
+    public UserLoginResponse login(String username, String password) {
         UserAuth userAuth = userAuthRepository.findByUsername(username);
         if (userAuth == null || !password.equals(userAuth.getPassword())) {
-            res.put("error", "Invalid username or password");
-            return res;
+            return null;
         }
 
         User user = userRepository.findById(userAuth.getUserId()).orElse(null);
         if (user == null) {
-            res.put("error", "User profile not found");
-            return res;
+            return null;
         }
 
-        res.put("userId", user.getId());
-        res.put("username", userAuth.getUsername());
-        res.put("nickname", user.getNickname());
-        res.put("identity", userAuth.getIdentity());
-        return res;
+        return new UserLoginResponse(
+                user.getId(),
+                userAuth.getUsername(),
+                user.getNickname(),
+                userAuth.getIdentity()
+        );
     }
 }

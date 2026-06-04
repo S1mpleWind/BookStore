@@ -1,5 +1,7 @@
 package com.reins.bookstore.service.impl;
 
+import com.reins.bookstore.dto.response.OrderDTO;
+import com.reins.bookstore.dto.response.OrderItemDTO;
 import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.entity.Cart;
 import com.reins.bookstore.entity.Order;
@@ -15,13 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * OrderServiceImpl 负责订单数据的转换与业务逻辑处理
+ * 使用 OrderDTO / OrderItemDTO 替代 Map<String, Object>，保证类型安全
  */
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -38,63 +39,68 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private CartRepository cartRepository;
 
-    @Override
-    public List<Map<String, Object>> findOrdersByUserId(Long userId) {
-        List<Order> orders = orderRepository.findByUserId(userId);
-        return orders.stream()
-                .map(this::toOrderResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Map<String, Object> findOrderById(Long id) {
-        return orderRepository.findById(id)
-                .map(this::toOrderResponse)
-                .orElse(null);
-    }
-
-    private Map<String, Object> toOrderResponse(Order order) {
+    /**
+     * 将 Order Entity + 关联的 OrderItems 转换为 OrderDTO
+     */
+    private OrderDTO toOrderDTO(Order order) {
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
-        List<Map<String, Object>> responseItems = new ArrayList<>();
+        List<OrderItemDTO> itemDTOs = new ArrayList<>();
         double totalPrice = 0;
         int totalCount = 0;
 
         for (OrderItem item : items) {
             int quantity = item.getNumber() == null ? 0 : item.getNumber();
             int unitPrice = item.getUnitPrice() == null ? 0 : item.getUnitPrice();
-            Map<String, Object> itemMap = new HashMap<>();
-            itemMap.put("id", item.getId());
-            itemMap.put("bookId", item.getBookId());
-            itemMap.put("title", item.getBookTitle());
-            itemMap.put("cover", item.getBookCover());
-            itemMap.put("number", quantity);
-            itemMap.put("unitPrice", unitPrice);
-            itemMap.put("price", unitPrice);
-            responseItems.add(itemMap);
+
+            OrderItemDTO itemDTO = new OrderItemDTO(
+                    item.getId(),
+                    item.getBookId(),
+                    item.getBookTitle(),
+                    item.getBookCover(),
+                    quantity,
+                    unitPrice,
+                    unitPrice  // price 字段保持与之前接口兼容
+            );
+            itemDTOs.add(itemDTO);
 
             totalCount += quantity;
             totalPrice += quantity * unitPrice / 100.0;
         }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("id", order.getId());
-        response.put("address", order.getAddress());
-        response.put("receiver", order.getReceiver());
-        response.put("tel", order.getTel());
-        response.put("userId", order.getUserId());
-        response.put("createdAt", order.getCreatedAt());
-        response.put("items", responseItems);
-        response.put("totalCount", totalCount);
-        response.put("totalPrice", totalPrice);
-        return response;
+        return new OrderDTO(
+                order.getId(),
+                order.getAddress(),
+                order.getReceiver(),
+                order.getTel(),
+                order.getUserId(),
+                order.getCreatedAt(),
+                itemDTOs,
+                totalCount,
+                totalPrice
+        );
+    }
+
+    @Override
+    public List<OrderDTO> findOrdersByUserId(Long userId) {
+        List<Order> orders = orderRepository.findByUserId(userId);
+        return orders.stream()
+                .map(this::toOrderDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderDTO findOrderById(Long id) {
+        return orderRepository.findById(id)
+                .map(this::toOrderDTO)
+                .orElse(null);
     }
 
     @Override
     @Transactional
-    public Map<String, Object> createOrder(Long userId, String receiver, String address, String tel) {
+    public OrderDTO createOrder(Long userId, String receiver, String address, String tel) {
         List<Cart> cartItems = cartRepository.findByUserId(userId);
         if (cartItems.isEmpty()) {
-            return Map.of("error", "购物车为空");
+            return null;
         }
 
         Order order = new Order();
@@ -125,6 +131,6 @@ public class OrderServiceImpl implements OrderService {
         // 清空购物车
         cartRepository.deleteByUserId(userId);
 
-        return toOrderResponse(savedOrder);
+        return toOrderDTO(savedOrder);
     }
 }

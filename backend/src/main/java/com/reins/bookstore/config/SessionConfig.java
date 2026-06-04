@@ -19,8 +19,7 @@ public class SessionConfig implements WebMvcConfigurer {
                 .addPathPatterns("/api/v1/**") // 拦截所有 /api/v1 下的请求
                 .excludePathPatterns(
                         "/api/v1/users/login",    // 登录不拦截
-                        "/api/v1/users/register", // 注册不拦截
-                        "/api/v1/books/**"        // 如果想让书本列表公开，可以排除；如果不想公开就去掉这行
+                        "/api/v1/users/register"  // 注册不拦截
                 );
     }
 

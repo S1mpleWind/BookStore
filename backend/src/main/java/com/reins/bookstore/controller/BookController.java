@@ -1,6 +1,6 @@
 package com.reins.bookstore.controller;
 
-import com.reins.bookstore.entity.Book;
+import com.reins.bookstore.dto.response.BookDTO;
 import com.reins.bookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +22,10 @@ public class BookController {
 
     /**
      * 获取所有书籍列表
-     * @return 包含所有书籍对象的列表
+     * @return 包含所有书籍对象的列表（BookDTO，而非 Entity）
      */
     @GetMapping("/book")
-    public List<Book> getAllBooks() {
+    public List<BookDTO> getAllBooks() {
         return bookService.findAll();
     }
 
@@ -35,10 +35,9 @@ public class BookController {
      * @return 如果找到则返回书籍对象及 200 状态码，否则返回 404
      */
     @GetMapping("/book/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable Long id) {
+    public ResponseEntity<BookDTO> getBookById(@PathVariable Long id) {
         return bookService.findById(id)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build()); /*返回Java对象的时候 @ResponseBody 触发 Spring 的消息转换器，
-                                                            调用底层的 jackson*/
+                .orElse(ResponseEntity.notFound().build());
     }
 }

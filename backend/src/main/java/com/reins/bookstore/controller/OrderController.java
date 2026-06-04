@@ -1,5 +1,6 @@
 package com.reins.bookstore.controller;
 
+import com.reins.bookstore.dto.response.OrderDTO;
 import com.reins.bookstore.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class OrderController {
      */
     @GetMapping("/order/{id}")
     public ResponseEntity<?> getOrderById(@PathVariable Long id) {
-        Object order = orderService.findOrderById(id);
+        OrderDTO order = orderService.findOrderById(id);
         if (order == null) {
             return ResponseEntity.notFound().build();
         }
@@ -52,9 +53,9 @@ public class OrderController {
             String address = params.get("address").toString();
             String tel = params.get("tel").toString();
 
-            Map<String, Object> result = orderService.createOrder(userId, receiver, address, tel);
-            if (result.containsKey("error")) {
-                return ResponseEntity.badRequest().body(result);
+            OrderDTO result = orderService.createOrder(userId, receiver, address, tel);
+            if (result == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "购物车为空"));
             }
             return ResponseEntity.ok(result);
         } catch (Exception e) {

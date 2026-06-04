@@ -1,6 +1,10 @@
 package com.reins.bookstore.controller;
 
+import com.reins.bookstore.dto.request.AddToCartRequest;
+import com.reins.bookstore.dto.response.CartItemDTO;
+import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.entity.Cart;
+import com.reins.bookstore.repository.BookRepository;
 import com.reins.bookstore.repository.CartRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -8,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/cart")
@@ -17,23 +22,44 @@ public class CartController {
     @Autowired
     private CartRepository cartRepository;
 
+    @Autowired
+    private BookRepository bookRepository;
+
+    /**
+     * 将 Cart Entity 转换为 CartItemDTO（包含书籍详情）
+     */
+    private CartItemDTO toDTO(Cart cart) {
+        Book book = bookRepository.findById(cart.getBookId()).orElse(null);
+        return new CartItemDTO(
+                cart.getId(),
+                cart.getBookId(),
+                cart.getUserId(),
+                cart.getNumber(),
+                book != null ? book.getTitle() : null,
+                book != null ? book.getCover() : null,
+                book != null && book.getPrice() != null ? book.getPrice().intValue() : 0
+        );
+    }
+
     /**
      * 查询用户的购物车
      */
     @GetMapping("/{userId}")
     public ResponseEntity<?> getCartByUserId(@PathVariable Long userId) {
-        List<Cart> cartItems = cartRepository.findByUserId(userId);
-        return ResponseEntity.ok(Map.of("items", cartItems));
+        List<CartItemDTO> dtos = cartRepository.findByUserId(userId).stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(Map.of("items", dtos));
     }
 
     /**
      * 添加商品到购物车
      */
     @PostMapping
-    public ResponseEntity<?> addToCart(@RequestBody Map<String, Object> params) {
-        Long userId = Long.parseLong(params.get("userId").toString());
-        Long bookId = Long.parseLong(params.get("bookId").toString());
-        Integer quantity = Integer.parseInt(params.get("quantity").toString());
+    public ResponseEntity<?> addToCart(@RequestBody AddToCartRequest request) {
+        Long userId = request.getUserId();
+        Long bookId = request.getBookId();
+        Integer quantity = request.getQuantity();
 
         // 检查购物车中是否已有此商品
         Cart existingItem = cartRepository.findByUserId(userId).stream()

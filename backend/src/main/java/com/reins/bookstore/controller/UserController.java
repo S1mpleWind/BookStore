@@ -1,5 +1,8 @@
 package com.reins.bookstore.controller;
 
+import com.reins.bookstore.dto.request.UserLoginRequest;
+import com.reins.bookstore.dto.request.UserRegisterRequest;
+import com.reins.bookstore.dto.response.UserLoginResponse;
 import com.reins.bookstore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,20 +26,17 @@ public class UserController {
 
     /**
      * 用户注册接口
-     * @param params 包含 username, password, nickname 的 JSON 对象
+     * @param request 包含 username, password, nickname 的请求 DTO
      * @return 注册成功或失败的消息
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody Map<String, String> params) {
-        String username = params.get("username");
-        String password = params.get("password");
-        String nickname = params.get("nickname");
-
-        if (username == null || password == null) {
+    public ResponseEntity<?> registerUser(@RequestBody UserRegisterRequest request) {
+        if (request.getUsername() == null || request.getPassword() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
 
-        Map<String, String> result = userService.register(username, password, nickname);
+        Map<String, String> result = userService.register(
+                request.getUsername(), request.getPassword(), request.getNickname());
         if (result.containsKey("error")) {
             return ResponseEntity.badRequest().body(result);
         }
@@ -45,29 +45,26 @@ public class UserController {
 
     /**
      * 用户登录接口
-     * @param params 包含 username, password 的 JSON 对象
-     * @return 用户信息
+     * @param request 包含 username, password 的请求 DTO
+     * @return 登录成功返回用户信息，失败返回 401
      */
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> params, HttpServletRequest request) {
-        String username = params.get("username");
-        String password = params.get("password");
-
-        if (username == null || password == null) {
+    public ResponseEntity<?> loginUser(@RequestBody UserLoginRequest request, HttpServletRequest servletRequest) {
+        if (request.getUsername() == null || request.getPassword() == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username and password are required"));
         }
 
-        Map<String, Object> result = userService.login(username, password);
-        if (result.containsKey("error")) {
-            return ResponseEntity.status(401).body(result);
+        UserLoginResponse user = userService.login(request.getUsername(), request.getPassword());
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid username or password"));
         }
 
         // 登录成功，将用户信息存入 Session
-        HttpSession session = request.getSession();
-        session.setAttribute("userId", result.get("userId"));
-        session.setAttribute("identity", result.get("identity"));
+        HttpSession session = servletRequest.getSession();
+        session.setAttribute("userId", user.getUserId());
+        session.setAttribute("identity", user.getIdentity());
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(user);
     }
 
     /**
