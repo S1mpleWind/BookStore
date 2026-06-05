@@ -9,5 +9,7 @@ import lombok.Data;
 public class UserRegisterRequest {
     private String username;
     private String password;
-    private String nickname;  // 可选
+    private String confirmPassword;
+    private String nickname;
+    private String email;
 }

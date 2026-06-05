@@ -19,4 +19,5 @@ public class User {
 
     private String nickname; // 用户昵称
     private Long balance = 0L; // 账户余额（单位：分）
+    private String email;    // 邮箱
 }

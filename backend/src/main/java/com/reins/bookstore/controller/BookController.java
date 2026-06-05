@@ -5,39 +5,74 @@ import com.reins.bookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
+import java.util.Map;
 
-/**
- * BookController 是书籍模块的控制层
- * 负责接收前端关于书籍列表和书籍详情的 HTTP 请求
- */
-@RestController             // controller + response body
-@RequestMapping("/api/v1")  //该controller内所有api的前缀
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true") // enable CORS
+@RestController
+@RequestMapping("/api/v1")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class BookController {
 
-    @Autowired //IoC annotation
+    @Autowired
     private BookService bookService;
 
     /**
-     * 获取所有书籍列表
-     * @return 包含所有书籍对象的列表（BookDTO，而非 Entity）
+     * 获取所有书籍列表 / 搜索
      */
     @GetMapping("/book")
-    public List<BookDTO> getAllBooks() {
+    public List<BookDTO> getAllBooks(@RequestParam(required = false) String title) {
+        if (title != null && !title.trim().isEmpty()) {
+            return bookService.searchByTitle(title);
+        }
         return bookService.findAll();
     }
 
     /**
-     * 根据 ID 获取单本书籍的详情
-     * @param id 书籍的唯一标识
-     * @return 如果找到则返回书籍对象及 200 状态码，否则返回 404
+     * 获取单本书籍详情
      */
     @GetMapping("/book/{id}")
     public ResponseEntity<BookDTO> getBookById(@PathVariable Long id) {
         return bookService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * 管理员：新增书籍
+     */
+    @PostMapping("/book")
+    public ResponseEntity<?> addBook(@RequestBody BookDTO dto, HttpServletRequest request) {
+        if (!isAdmin(request)) return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        return ResponseEntity.ok(bookService.saveBook(dto));
+    }
+
+    /**
+     * 管理员：修改书籍
+     */
+    @PutMapping("/book/{id}")
+    public ResponseEntity<?> updateBook(@PathVariable Long id, @RequestBody BookDTO dto, HttpServletRequest request) {
+        if (!isAdmin(request)) return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        BookDTO result = bookService.updateBook(id, dto);
+        if (result == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * 管理员：删除书籍
+     */
+    @DeleteMapping("/book/{id}")
+    public ResponseEntity<?> deleteBook(@PathVariable Long id, HttpServletRequest request) {
+        if (!isAdmin(request)) return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        return ResponseEntity.ok(bookService.deleteBook(id));
+    }
+
+    private boolean isAdmin(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+        Integer identity = (Integer) session.getAttribute("identity");
+        return identity != null && identity == 1;
     }
 }

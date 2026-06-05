@@ -24,4 +24,5 @@ public class UserAuth {
 
     @Column(name = "user_id", unique = true)
     private Long userId; // 关联的 User 实体 ID
+    private Boolean enable = true; // 是否启用（禁用则无法登录）
 }

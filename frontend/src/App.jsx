@@ -9,6 +9,10 @@ import Cart from './pages/Cart';
 import Order from './pages/Order';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
+import ManageBooks from './pages/ManageBooks';
+import ManageUsers from './pages/ManageUsers';
+import AdminOrders from './pages/AdminOrders';
+import Statistics from './pages/Statistics';
 import { CartProvider } from './components/CartContext';
 import { UserProvider } from './components/UserContext';
 import './styles/style.css';
@@ -16,24 +20,26 @@ import './styles/detail-actions.css';
 import './styles/antd-overrides.css';
 
 const isLoggedIn = () => {
-  try {
-    return localStorage.getItem('isLoggedIn') === 'true';
-  } catch {
-    return false;
-  }
+  try { return localStorage.getItem('isLoggedIn') === 'true'; } catch { return false; }
 };
 
-//统一做登录的拦截
-const ProtectedRoute = ({ children }) => {
-  const location = useLocation();
+const isAdmin = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.identity === 1;
+  } catch { return false; }
+};
 
+const ProtectedRoute = ({ children, adminOnly = false }) => {
+  const location = useLocation();
   if (!isLoggedIn()) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
-
+  if (adminOnly && !isAdmin()) {
+    return <Navigate to="/" replace />;
+  }
   return children;
 };
-
 
 const AppRoutes = ({ selectedBook, setSelectedBook }) => {
   const location = useLocation();
@@ -41,49 +47,25 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
 
   return (
     <div className={`app-layout ${onLoginPage ? 'app-layout-login' : ''}`}>
-      {/* 只有在非登录页才渲染侧边导航栏 */}
       {!onLoginPage ? <Navbar /> : null}
       <main className={`main-content ${onLoginPage ? 'main-content-login' : ''}`}>
         <Routes>
           <Route path="/login" element={isLoggedIn() ? <Navigate to="/" replace /> : <Login />} />
 
-          <Route
-            path="/"
-            element={(
-              <ProtectedRoute>
-                <Home setSelectedBook={setSelectedBook} />
-              </ProtectedRoute>
-            )}
-          />
+          <Route path="/" element={<ProtectedRoute><Home setSelectedBook={setSelectedBook} /></ProtectedRoute>} />
+          <Route path="/book/:id" element={<ProtectedRoute><Detail selectedBook={selectedBook} /></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+          <Route path="/order" element={<ProtectedRoute><Order /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
-          <Route
-            path="/book/:id"
-            element={(
-              <ProtectedRoute>
-                <Detail selectedBook={selectedBook} />
-              </ProtectedRoute>
-            )}
-          />
+          {/* 顾客和管理员都可用 */}
+          <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
 
-          <Route path="/cart" element={(
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          )} />
+          {/* 管理员专用 */}
+          <Route path="/manage-books" element={<ProtectedRoute adminOnly><ManageBooks /></ProtectedRoute>} />
+          <Route path="/manage-users" element={<ProtectedRoute adminOnly><ManageUsers /></ProtectedRoute>} />
+          <Route path="/admin-orders" element={<ProtectedRoute adminOnly><AdminOrders /></ProtectedRoute>} />
 
-          <Route path="/order" element={(
-            <ProtectedRoute>
-              <Order />
-            </ProtectedRoute>
-          )} />
-
-          <Route path="/profile" element={(
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          )} />
-
-          {/*如果不是登录，就定向到./*/}
           <Route path="*" element={<Navigate to={isLoggedIn() ? '/' : '/login'} replace />} />
         </Routes>
       </main>
@@ -91,15 +73,9 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
   );
 };
 
-/**
- * App 组件：以 hw1 为基础重构。
- * 引入 CartProvider 管理全局购物车状态。
- * 使用 ConfigProvider + AntdApp 包装以支持全局 message/modal/notification
- */
 const App = () => {
   const [selectedBook, setSelectedBook] = useState(null);
 
-  //？需要添加antD来enable message
   return (
     <ConfigProvider locale={zhCN}>
       <AntdApp>

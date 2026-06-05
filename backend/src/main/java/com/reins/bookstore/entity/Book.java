@@ -4,30 +4,26 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Book 实体类映射数据库中的 book 表
- * 包含了书籍的基本信息如标题、作者、价格等
- */
-
-// JPA annotation
 @Entity
 @Table(name = "book")
-
-// Lombok annotation
-@Data // 自动生成五种annotation
+@Data
 @NoArgsConstructor
 public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;    // 书名
-    private String author;   // 作者
-    private String cover;    // 封面图片 URL
-    private Double price;    // 价格
+    private String title;
+    private String author;
+    private String cover;
+    private Double price;
 
     @Column(name = "description", columnDefinition = "TEXT")
-    private String desc;     // 书籍描述
+    private String desc;
+    private Integer inventory = 100;
+    private String publisher;
+    private String isbn;
+    private Integer sales = 0;
 
-    private Boolean recommended = false; // 是否推荐
+    private Boolean recommended = false;
 }

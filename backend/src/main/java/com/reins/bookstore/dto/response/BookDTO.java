@@ -19,4 +19,7 @@ public class BookDTO {
     private Integer price;       // 价格（单位：分），避免浮点数精度问题
     private String description;  // 书籍描述
     private Boolean recommended; // 是否推荐
+    private Integer inventory;   // 库存量
+    private String publisher;    // 出版社
+    private String isbn;         // ISBN编号
 }

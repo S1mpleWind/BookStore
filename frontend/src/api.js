@@ -1,147 +1,167 @@
-// 前后端之间通过异步进行通信
+const API_BASE = 'http://localhost:8080/api/v1';
 
-/**
- * 封装通用的 POST 请求函数，前后端之间传递JSON数据
- */
 async function postJson(url, payload) {
-  console.debug('[api] POST', url, payload);
   const response = await fetch(url, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload), //? transform a Java object into a JSON string
+    body: JSON.stringify(payload),
   });
-
   const contentType = response.headers.get('content-type') || '';
   let data = null;
-  
   if (contentType.includes('application/json')) {
     data = await response.json();
   } else {
     data = await response.text();
   }
-
-  console.debug('[api] response', url, {
-    ok: response.ok,
-    status: response.status,
-    contentType,
-    data,
-  });
-
   if (!response.ok) {
     if (typeof data === 'object' && data.error) {
       throw new Error(JSON.stringify({ status: response.status, error: data.error, data }));
     }
     throw new Error(JSON.stringify({ status: response.status, data }));
   }
-
   return data;
 }
 
-/**
- * 获取所有书籍列表
- */
-export async function getBooks() {
-  // 使用默认的 GET
-  const response = await fetch('http://localhost:8080/api/v1/book', { credentials: 'include' });
-  if (!response.ok) throw new Error('Failed to fetch books');
-  return await response.json();
-}
-
-/**
- * 获取指定 ID 的书籍详情
- */
-export async function getBookById(id) {
-  const response = await fetch(`http://localhost:8080/api/v1/book/${id}`, { credentials: 'include' });
-  if (!response.ok) throw new Error('Failed to fetch book detail');
-  return await response.json();
-}
-
-/**
- * 用户登录
- */
-export async function loginUser(credentials) {
-  return postJson('http://localhost:8080/api/v1/users/login', credentials);
-}
-
-/**
- * 用户注册
- */
-export async function registerUser(profile) {
-  return postJson('http://localhost:8080/api/v1/users/register', profile);
-}
-
-/**
- * 获取用户的购物车信息
- */
-export async function getCart(userId) {
-  const response = await fetch(`http://localhost:8080/api/v1/cart/${userId}`, { credentials: 'include' });
-  if (!response.ok) throw new Error('Failed to fetch cart');
-  return await response.json();
-}
-
-/**
- * 添加书籍到购物车
- */
-export async function addToCart(userId, bookId, quantity = 1) {
-  return postJson('http://localhost:8080/api/v1/cart', {
-    userId,
-    bookId,
-    quantity
-  });
-}
-
-/**
- * 更新购物车项的数量
- */
-export async function updateCartItem(cartItemId, quantity) {
-  const response = await fetch(`http://localhost:8080/api/v1/cart/${cartItemId}`, {
+async function putJson(url, payload) {
+  const response = await fetch(url, {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quantity })
+    body: JSON.stringify(payload),
   });
-  if (!response.ok) throw new Error('Failed to update cart item');
+  const data = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify({ status: response.status, data }));
+  return data;
+}
+
+async function del(url) {
+  const response = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(JSON.stringify({ status: response.status, data }));
+  return data;
+}
+
+async function getJson(url) {
+  const response = await fetch(url, { credentials: 'include' });
+  if (!response.ok) throw new Error(JSON.stringify({ status: response.status }));
   return await response.json();
 }
 
-/**
- * 删除指定的购物车项
- */
+// ---- Books ----
+export async function getBooks(title) {
+  let url = `${API_BASE}/book`;
+  if (title) url += `?title=${encodeURIComponent(title)}`;
+  return getJson(url);
+}
+
+export async function getBookById(id) {
+  return getJson(`${API_BASE}/book/${id}`);
+}
+
+export async function addBook(bookData) {
+  return postJson(`${API_BASE}/book`, bookData);
+}
+
+export async function updateBook(id, bookData) {
+  return putJson(`${API_BASE}/book/${id}`, bookData);
+}
+
+export async function deleteBook(id) {
+  return del(`${API_BASE}/book/${id}`);
+}
+
+// ---- Auth ----
+export async function loginUser(credentials) {
+  return postJson(`${API_BASE}/users/login`, credentials);
+}
+
+export async function registerUser(profile) {
+  return postJson(`${API_BASE}/users/register`, profile);
+}
+
+export async function logoutUser() {
+  return postJson(`${API_BASE}/users/logout`, {});
+}
+
+// ---- Users (admin) ----
+export async function getUsersList() {
+  return getJson(`${API_BASE}/users/list`);
+}
+
+export async function toggleUserStatus(userId) {
+  return putJson(`${API_BASE}/users/${userId}/status`, {});
+}
+
+// ---- Cart ----
+export async function getCart(userId) {
+  return getJson(`${API_BASE}/cart/${userId}`);
+}
+
+export async function addToCart(userId, bookId, quantity = 1) {
+  return postJson(`${API_BASE}/cart`, { userId, bookId, quantity });
+}
+
+export async function updateCartItem(cartItemId, quantity) {
+  return putJson(`${API_BASE}/cart/${cartItemId}`, { quantity });
+}
+
 export async function deleteCartItem(cartItemId) {
-  const response = await fetch(`http://localhost:8080/api/v1/cart/${cartItemId}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  if (!response.ok) throw new Error('Failed to delete cart item');
-  return await response.json();
+  return del(`${API_BASE}/cart/${cartItemId}`);
 }
 
-/**
- * 清空指定用户的购物车
- */
 export async function clearCart(userId) {
-  const response = await fetch(`http://localhost:8080/api/v1/cart/user/${userId}`, {
-    method: 'DELETE',
-    credentials: 'include'
-  });
-  if (!response.ok) throw new Error('Failed to clear cart');
-  return await response.json();
+  return del(`${API_BASE}/cart/user/${userId}`);
 }
 
-/**
- * 获取用户的历史订单列表
- */
-export async function getOrders(userId) {
-  const response = await fetch(`http://localhost:8080/api/v1/orders/${userId}`, { credentials: 'include' });
-  if (!response.ok) throw new Error('Failed to fetch orders');
-  return await response.json();
-}
-
-/**
- * 创建新订单（下单结算）
- */
+// ---- Orders ----
 export async function createOrder(orderData) {
-  return postJson('http://localhost:8080/api/v1/orders', orderData);
+  return postJson(`${API_BASE}/orders`, orderData);
 }
 
+export async function getMyOrders(params = {}) {
+  const q = new URLSearchParams();
+  if (params.start) q.append('start', params.start);
+  if (params.end) q.append('end', params.end);
+  if (params.bookTitle) q.append('bookTitle', params.bookTitle);
+  const qs = q.toString();
+  return getJson(`${API_BASE}/orders${qs ? '?' + qs : ''}`);
+}
+
+export async function getAllOrders(params = {}) {
+  const q = new URLSearchParams();
+  if (params.start) q.append('start', params.start);
+  if (params.end) q.append('end', params.end);
+  if (params.bookTitle) q.append('bookTitle', params.bookTitle);
+  const qs = q.toString();
+  return getJson(`${API_BASE}/orders/all${qs ? '?' + qs : ''}`);
+}
+
+export async function getOrderById(id) {
+  return getJson(`${API_BASE}/order/${id}`);
+}
+
+// ---- Statistics ----
+export async function getSalesRanking(start, end) {
+  const q = new URLSearchParams();
+  if (start) q.append('start', start);
+  if (end) q.append('end', end);
+  const qs = q.toString();
+  return getJson(`${API_BASE}/statistics/sales${qs ? '?' + qs : ''}`);
+}
+
+export async function getConsumptionRanking(start, end) {
+  const q = new URLSearchParams();
+  if (start) q.append('start', start);
+  if (end) q.append('end', end);
+  const qs = q.toString();
+  return getJson(`${API_BASE}/statistics/consumption${qs ? '?' + qs : ''}`);
+}
+
+export async function getMyStatistics(start, end) {
+  const q = new URLSearchParams();
+  if (start) q.append('start', start);
+  if (end) q.append('end', end);
+  const qs = q.toString();
+  return getJson(`${API_BASE}/statistics/my-purchases${qs ? '?' + qs : ''}`);
+}
