@@ -4,8 +4,10 @@ import com.reins.bookstore.dto.request.AddToCartRequest;
 import com.reins.bookstore.dto.response.CartItemDTO;
 import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.entity.Cart;
+import com.reins.bookstore.entity.User;
 import com.reins.bookstore.repository.BookRepository;
 import com.reins.bookstore.repository.CartRepository;
+import com.reins.bookstore.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,11 +27,15 @@ public class CartController {
     @Autowired
     private BookRepository bookRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * 将 Cart Entity 转换为 CartItemDTO（包含书籍详情）
+     * 利用 JPA 关联关系从实体导航获取数据，无需额外查询
      */
     private CartItemDTO toDTO(Cart cart) {
-        Book book = bookRepository.findById(cart.getBookId()).orElse(null);
+        Book book = cart.getBook();
         return new CartItemDTO(
                 cart.getId(),
                 cart.getBookId(),
@@ -46,7 +52,7 @@ public class CartController {
      */
     @GetMapping("/{userId}")
     public ResponseEntity<?> getCartByUserId(@PathVariable Long userId) {
-        List<CartItemDTO> dtos = cartRepository.findByUserId(userId).stream()
+        List<CartItemDTO> dtos = cartRepository.findByUser_Id(userId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(Map.of("items", dtos));
@@ -54,6 +60,7 @@ public class CartController {
 
     /**
      * 添加商品到购物车
+     * 使用 JPA 实体关联：通过 User、Book 实体建立 Cart，而非直接操作外键 ID
      */
     @PostMapping
     public ResponseEntity<?> addToCart(@RequestBody AddToCartRequest request) {
@@ -61,9 +68,16 @@ public class CartController {
         Long bookId = request.getBookId();
         Integer quantity = request.getQuantity();
 
-        // 检查购物车中是否已有此商品
-        Cart existingItem = cartRepository.findByUserId(userId).stream()
-                .filter(item -> item.getBookId().equals(bookId))
+        // 查找 JPA 关联实体
+        User user = userRepository.findById(userId).orElse(null);
+        Book book = bookRepository.findById(bookId).orElse(null);
+        if (user == null || book == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "用户或书籍不存在"));
+        }
+
+        // 检查购物车中是否已有此商品（通过关联导航查询）
+        Cart existingItem = cartRepository.findByUser_Id(userId).stream()
+                .filter(item -> item.getBook() != null && item.getBook().getId().equals(bookId))
                 .findFirst()
                 .orElse(null);
 
@@ -72,10 +86,10 @@ public class CartController {
             existingItem.setNumber(existingItem.getNumber() + quantity);
             cartRepository.save(existingItem);
         } else {
-            // 创建新的购物车项
+            // 创建新的购物车项，通过 JPA 关联建立关系
             Cart cartItem = new Cart();
-            cartItem.setUserId(userId);
-            cartItem.setBookId(bookId);
+            cartItem.setUser(user);   // 设置实体关联
+            cartItem.setBook(book);   // 设置实体关联
             cartItem.setNumber(quantity);
             cartRepository.save(cartItem);
         }
@@ -116,7 +130,7 @@ public class CartController {
      */
     @DeleteMapping("/user/{userId}")
     public ResponseEntity<?> clearCart(@PathVariable Long userId) {
-        cartRepository.deleteByUserId(userId);
+        cartRepository.deleteByUser_Id(userId);
         return ResponseEntity.ok(Map.of("message", "Cart cleared"));
     }
 }

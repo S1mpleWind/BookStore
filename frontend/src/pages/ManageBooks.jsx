@@ -7,15 +7,25 @@ const ManageBooks = () => {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [searchTitle, setSearchTitle] = useState('');
   const [form] = Form.useForm();
   const { message } = App.useApp();
 
-  const loadBooks = () => {
+  const loadBooks = (title) => {
     setLoading(true);
-    getBooks().then(setBooks).finally(() => setLoading(false));
+    getBooks(title).then(setBooks).finally(() => setLoading(false));
   };
 
   useEffect(() => { loadBooks(); }, []);
+
+  const handleSearch = (value) => {
+    setSearchTitle(value);
+    if (value.trim()) {
+      loadBooks(value.trim());
+    } else {
+      loadBooks();
+    }
+  };
 
   const handleAdd = () => { setEditing(null); form.resetFields(); setModalOpen(true); };
   const handleEdit = (record) => { setEditing(record); form.setFieldsValue(record); setModalOpen(true); };
@@ -38,6 +48,7 @@ const ManageBooks = () => {
   };
 
   const columns = [
+    { title: '封面', dataIndex: 'cover', key: 'cover', render: (v) => v ? <img src={v} alt="cover" style={{ width: 48, height: 64, objectFit: 'cover' }} /> : '-' },
     { title: '书名', dataIndex: 'title', key: 'title' },
     { title: '作者', dataIndex: 'author', key: 'author' },
     { title: '价格', dataIndex: 'price', key: 'price', render: (v) => v ? `¥${(v/100).toFixed(2)}` : '-' },
@@ -54,7 +65,18 @@ const ManageBooks = () => {
   return (
     <div className="content-inner">
       <h1 className="page-title">书籍管理</h1>
-      <Button type="primary" style={{ marginBottom: 16 }} onClick={handleAdd}>添加新书</Button>
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <Input.Search
+          placeholder="搜索书名"
+          allowClear
+          enterButton
+          value={searchTitle}
+          onChange={(e) => setSearchTitle(e.target.value)}
+          onSearch={handleSearch}
+          style={{ maxWidth: 360 }}
+        />
+        <Button type="primary" onClick={handleAdd}>添加新书</Button>
+      </div>
       <Table rowKey="id" dataSource={books} columns={columns} loading={loading} />
       <Modal title={editing ? '编辑书籍' : '添加书籍'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} width={600}>
         <Form form={form} layout="vertical">

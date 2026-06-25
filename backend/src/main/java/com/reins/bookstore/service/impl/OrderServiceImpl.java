@@ -6,10 +6,12 @@ import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.entity.Cart;
 import com.reins.bookstore.entity.Order;
 import com.reins.bookstore.entity.OrderItem;
+import com.reins.bookstore.entity.User;
 import com.reins.bookstore.repository.BookRepository;
 import com.reins.bookstore.repository.CartRepository;
 import com.reins.bookstore.repository.OrderItemRepository;
 import com.reins.bookstore.repository.OrderRepository;
+import com.reins.bookstore.repository.UserRepository;
 import com.reins.bookstore.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,8 +36,15 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private CartRepository cartRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    /**
+     * 将 Order Entity 转换为 OrderDTO
+     * 利用 JPA 关联关系：通过 order.getItems() 直接获取关联的 OrderItem 列表
+     */
     private OrderDTO toOrderDTO(Order order) {
-        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        List<OrderItem> items = order.getItems(); // 通过 JPA 关联直接从 Order 导航获取
         List<OrderItemDTO> itemDTOs = new ArrayList<>();
         double totalPrice = 0;
         int totalCount = 0;
@@ -63,7 +72,7 @@ public class OrderServiceImpl implements OrderService {
                 order.getAddress(),
                 order.getReceiver(),
                 order.getTel(),
-                order.getUserId(),
+                order.getUserId(),  // @Transient getter，通过 user 实体导航获取
                 order.getCreatedAt(),
                 itemDTOs,
                 totalCount,
@@ -73,7 +82,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<OrderDTO> findOrdersByUserId(Long userId) {
-        return orderRepository.findByUserId(userId).stream()
+        return orderRepository.findByUser_Id(userId).stream()
                 .map(this::toOrderDTO)
                 .collect(Collectors.toList());
     }
@@ -88,19 +97,23 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional
     public OrderDTO createOrder(Long userId, String receiver, String address, String tel) {
-        List<Cart> cartItems = cartRepository.findByUserId(userId);
+        List<Cart> cartItems = cartRepository.findByUser_Id(userId);
         if (cartItems.isEmpty()) {
             return null;
         }
 
+        // 查找用户实体以建立 JPA 关联
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return null;
+        }
+
         Order order = new Order();
-        order.setUserId(userId);
+        order.setUser(user);       // 通过 JPA 关联设置用户
         order.setReceiver(receiver);
         order.setAddress(address);
         order.setTel(tel);
         order.setCreatedAt(LocalDateTime.now());
-
-        Order savedOrder = orderRepository.save(order);
 
         // 第一步：校验库存是否足够
         for (Cart cartItem : cartItems) {
@@ -113,7 +126,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        // 第二步：减库存、增销量、生成订单项
+        // 第二步：生成订单项（通过 JPA 级联关联，保存 Order 时会自动保存 OrderItem）
         for (Cart cartItem : cartItems) {
             Book book = bookRepository.findById(cartItem.getBookId()).orElse(null);
             if (book == null) continue;
@@ -124,16 +137,22 @@ public class OrderServiceImpl implements OrderService {
             bookRepository.save(book);
 
             OrderItem orderItem = new OrderItem();
-            orderItem.setOrderId(savedOrder.getId());
             orderItem.setBookId(book.getId());
             orderItem.setBookTitle(book.getTitle());
             orderItem.setBookCover(book.getCover());
             orderItem.setUnitPrice(book.getPrice() == null ? 0 : book.getPrice().intValue());
             orderItem.setNumber(orderedQty);
-            orderItemRepository.save(orderItem);
+
+            // 通过 JPA 双向关联添加，利用 cascade = ALL 在保存 Order 时级联保存 OrderItem
+            order.addItem(orderItem);
         }
 
-        cartRepository.deleteByUserId(userId);
+        // 保存 Order（级联保存 OrderItem）
+        Order savedOrder = orderRepository.save(order);
+
+        // 清空购物车
+        cartRepository.deleteByUser_Id(userId);
+
         return toOrderDTO(savedOrder);
     }
 
@@ -153,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
         } else if (userId != null && start != null) {
             orders = orderRepository.findByUserIdAndTimeRange(userId, start, LocalDateTime.now());
         } else if (userId != null) {
-            orders = orderRepository.findByUserId(userId);
+            orders = orderRepository.findByUser_Id(userId);
         } else if (start != null && end != null) {
             orders = orderRepository.findByTimeRange(start, end);
         } else {
@@ -196,7 +215,7 @@ public class OrderServiceImpl implements OrderService {
         Map<Long, String> bookInfo = new HashMap<>();
 
         for (Order order : orders) {
-            List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+            List<OrderItem> items = order.getItems(); // 通过 JPA 关联导航获取
             for (OrderItem item : items) {
                 if (item.getBookId() == null) continue;
                 Integer[] arr = bookSales.computeIfAbsent(item.getBookId(), k -> new Integer[]{0});
@@ -231,7 +250,7 @@ public class OrderServiceImpl implements OrderService {
 
         for (Order order : orders) {
             if (order.getUserId() == null) continue;
-            List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+            List<OrderItem> items = order.getItems(); // 通过 JPA 关联导航获取
             long total = 0;
             for (OrderItem item : items) {
                 int qty = item.getNumber() != null ? item.getNumber() : 0;
@@ -262,7 +281,7 @@ public class OrderServiceImpl implements OrderService {
         if (start != null && end != null) {
             orders = orderRepository.findByUserIdAndTimeRange(userId, start, end);
         } else {
-            orders = orderRepository.findByUserId(userId);
+            orders = orderRepository.findByUser_Id(userId);
         }
 
         Map<Long, Integer> bookCount = new LinkedHashMap<>();
@@ -271,7 +290,7 @@ public class OrderServiceImpl implements OrderService {
         long totalAmount = 0;
 
         for (Order order : orders) {
-            List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+            List<OrderItem> items = order.getItems(); // 通过 JPA 关联导航获取
             for (OrderItem item : items) {
                 int qty = item.getNumber() != null ? item.getNumber() : 0;
                 int price = item.getUnitPrice() != null ? item.getUnitPrice() : 0;

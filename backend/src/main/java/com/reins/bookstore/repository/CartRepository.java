@@ -8,6 +8,16 @@ import java.util.List;
 
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
-	List<Cart> findByUserId(Long userId);
-	void deleteByUserId(Long userId);
+
+    /**
+     * 通过 JPA 关联路径查询：根据 User 实体的 ID 查找购物车项
+     * Spring Data JPA 解析 findByUser_Id → user.id
+     */
+    List<Cart> findByUser_Id(Long userId);
+
+    /**
+     * 删除指定用户的所有购物车项
+     * 通过关联路径 user.id 匹配
+     */
+    void deleteByUser_Id(Long userId);
 }
