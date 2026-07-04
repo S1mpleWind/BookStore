@@ -44,8 +44,13 @@ public class UserServiceImpl implements UserService {
             res.put("error", "两次输入的密码不一致");
             return res;
         }
+        // 校验邮箱不能为空
+        if (email == null || email.trim().isEmpty()) {
+            res.put("error", "邮箱不能为空");
+            return res;
+        }
         // 校验邮箱格式
-        if (email != null && !email.isEmpty() && !EMAIL_PATTERN.matcher(email).matches()) {
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
             res.put("error", "邮箱格式不正确");
             return res;
         }

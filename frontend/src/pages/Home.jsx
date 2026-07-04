@@ -75,6 +75,7 @@ const Home = () => {
                         <span className="featured-badge">推荐</span>
                         <h3>{book.title}</h3>
                         <p className="muted">{book.author}</p>
+                        {book.isbn && <p className="muted">ISBN：{book.isbn}</p>}
                         <p className="muted">库存：{book.inventory ?? '-'} 本</p>
                         <p className="price">¥{(book.price / 100).toFixed(2)}</p>
                         <div className="card-actions">
@@ -102,6 +103,7 @@ const Home = () => {
                   <div className="card-body">
                     <h3>{book.title}</h3>
                     <p className="muted">{book.author}</p>
+                    {book.isbn && <p className="muted">ISBN：{book.isbn}</p>}
                     <p className="muted">库存：{book.inventory ?? '-'} 本</p>
                     <p className="price">¥{(book.price / 100).toFixed(2)}</p>
                   </div>

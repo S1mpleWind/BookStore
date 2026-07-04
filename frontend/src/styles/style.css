@@ -210,23 +210,6 @@ body {
   background: rgba(255, 255, 255, 0.06);
   transform: translateX(2px);
 }
-
-.cart-badge {
-  min-width: 24px;
-  text-align: center;
-  font-size: 12px;
-  padding: 4px 7px;
-  border-radius: 999px;
-  color: #111;
-  background: rgba(255,255,255,0.9);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-
-/* 隐藏购物车上的数字，仅保留视觉占位（如需完全移除，删除该元素） */
-.cart-badge {
-  display: none;
-}
-
 /* 主内容区在侧栏收缩时的响应：默认占用收缩宽度，hover 时展开 */
 .main-content {
   margin-left: 72px;

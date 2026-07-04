@@ -126,10 +126,11 @@ const Login = () => {
                     label="邮箱"
                     name="email"
                     rules={[
+                      { required: true, message: '请输入邮箱' },
                       { type: 'email', message: '邮箱格式不正确' },
                     ]}
                   >
-                    <Input placeholder="请输入邮箱（可选）" />
+                    <Input placeholder="请输入邮箱" />
                   </Form.Item>
                   <Form.Item label="昵称" name="nickname">
                     <Input placeholder="请输入昵称（可选）" />

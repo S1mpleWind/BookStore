@@ -1,15 +1,12 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useCart } from './CartContext';
 import { useUser } from './UserContext';
 import { Button } from 'antd';
 
 const Navbar = () => {
-  const { cartItems } = useCart();
   const { logout, user } = useUser();
   const navigate = useNavigate();
   const isAdmin = user?.identity === 1;
-  const totalCount = cartItems.reduce((acc, item) => acc + (item.quantity || 0), 0);
 
   const handleLogout = () => {
     logout();
@@ -41,7 +38,6 @@ const Navbar = () => {
               <NavLink to="/cart" className={({ isActive }) => (isActive ? 'active' : '')}>
                 <span className="nav-icon">🧺</span>
                 <span className="nav-label">购物车</span>
-                {totalCount > 0 && <span className="cart-badge">{totalCount}</span>}
               </NavLink>
             </li>
             <li>

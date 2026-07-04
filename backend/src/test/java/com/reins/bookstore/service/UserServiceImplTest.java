@@ -74,7 +74,7 @@ class UserServiceImplTest {
         when(userRepository.save(any(User.class))).thenReturn(testUser);
         when(userAuthRepository.save(any(UserAuth.class))).thenReturn(testUserAuth);
 
-        Map<String, Object> result = userService.register("newuser", "pass123", "pass123", null, null);
+        Map<String, Object> result = userService.register("newuser", "pass123", "pass123", null, "new@example.com");
 
         assertEquals("注册成功", result.get("message"));
         verify(userRepository).save(any(User.class));
@@ -129,25 +129,19 @@ class UserServiceImplTest {
     }
 
     @Test
-    void register_shouldAcceptEmptyEmail() {
-        when(userAuthRepository.findByUsername("newuser")).thenReturn(null);
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(userAuthRepository.save(any(UserAuth.class))).thenReturn(testUserAuth);
-
+    void register_shouldFailWhenEmailIsEmpty() {
         Map<String, Object> result = userService.register("newuser", "pass123", "pass123", "Nick", "");
 
-        assertEquals("注册成功", result.get("message"));
+        assertEquals("邮箱不能为空", result.get("error"));
+        verify(userRepository, never()).save(any());
     }
 
     @Test
-    void register_shouldAcceptNullEmail() {
-        when(userAuthRepository.findByUsername("newuser")).thenReturn(null);
-        when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(userAuthRepository.save(any(UserAuth.class))).thenReturn(testUserAuth);
-
+    void register_shouldFailWhenEmailIsNull() {
         Map<String, Object> result = userService.register("newuser", "pass123", "pass123", "Nick", null);
 
-        assertEquals("注册成功", result.get("message"));
+        assertEquals("邮箱不能为空", result.get("error"));
+        verify(userRepository, never()).save(any());
     }
 
     @Test
