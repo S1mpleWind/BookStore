@@ -13,6 +13,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * 用户服务实现类
+ *
+ * 实现 UserService 接口，处理用户注册、登录、用户列表和状态管理。
+ *
+ * 设计说明：
+ * - 用户信息分两张表存储：user（基本信息）+ user_auth（鉴权信息）
+ * - 这样做的好处是敏感数据（密码、身份）与非敏感数据（昵称、邮箱）隔离
+ * - 注册时使用 @Transactional 保证 User 和 UserAuth 同时写入或同时回滚
+ */
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -22,11 +32,36 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private UserAuthRepository userAuthRepository;
 
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+    /** 邮箱格式正则 */
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
+    /**
+     * 用户注册
+     *
+     * 校验流程（按顺序）：
+     * 1. 用户名不能为空
+     * 2. 密码不能为空
+     * 3. 两次输入的密码必须一致
+     * 4. 邮箱不能为空
+     * 5. 邮箱格式必须正确
+     * 6. 用户名不能重复
+     *
+     * 注册逻辑：
+     * 1. 先保存 User 实体（获得自增 ID）
+     * 2. 再用这个 ID 创建 UserAuth，关联两个表
+     *
+     * @param username        用户名
+     * @param password        密码
+     * @param confirmPassword 确认密码
+     * @param nickname        昵称（可选，默认为用户名）
+     * @param email           邮箱
+     * @return { message: "注册成功" } 或 { error: "错误信息" }
+     */
     @Override
     @Transactional
-    public Map<String, Object> register(String username, String password, String confirmPassword, String nickname, String email) {
+    public Map<String, Object> register(String username, String password, String confirmPassword,
+                                        String nickname, String email) {
         Map<String, Object> res = new HashMap<>();
 
         // 校验用户名是否为空
@@ -60,54 +95,85 @@ public class UserServiceImpl implements UserService {
             return res;
         }
 
+        // 先保存基本信息（User 表，MySQL 自动生成 ID）
         User user = new User();
         user.setNickname(nickname != null ? nickname : username);
         user.setBalance(0L);
         user.setEmail(email);
         User savedUser = userRepository.save(user);
 
+        // 再保存鉴权信息（UserAuth 表，关联 User 的 ID）
+        // 这样设计是为了将敏感字段（密码、身份）与非敏感字段（昵称、邮箱）物理隔离
         UserAuth userAuth = new UserAuth();
         userAuth.setUsername(username);
         userAuth.setPassword(password);
-        userAuth.setUserId(savedUser.getId());
-        userAuth.setIdentity(0);
-        userAuth.setEnable(true);
+        userAuth.setUserId(savedUser.getId());   // 关联 User 表的主键
+        userAuth.setIdentity(0);                 // 默认角色：顾客
+        userAuth.setEnable(true);                // 默认启用
         userAuthRepository.save(userAuth);
 
         res.put("message", "注册成功");
         return res;
     }
 
+    /**
+     * 用户登录
+     *
+     * 验证逻辑：
+     * 1. 根据用户名查找 UserAuth
+     * 2. 检查用户是否存在 + 密码是否正确 → 不对返回 null，Controller 返回 401
+     * 3. 检查用户是否被禁用 → 是则返回 identity=-1，Controller 返回 403
+     * 4. 查 User 表获取昵称 → 组装 UserLoginResponse
+     *
+     * @param username 用户名
+     * @param password 密码
+     * @return UserLoginResponse 或 null（账号/密码错误）或 identity=-1（禁用）
+     */
     @Override
     public UserLoginResponse login(String username, String password) {
+
+        //*调用 repository 进行数据查询
         UserAuth userAuth = userAuthRepository.findByUsername(username);
+
+        // 用户名不存在或密码错误
         if (userAuth == null || !password.equals(userAuth.getPassword())) {
-            return null;
+            return null;  // Controller 层根据 null 返回 401
         }
 
-        // 检查用户是否被禁用 - 返回 identity=-1 让 Controller 区分
+        // 检查用户是否被禁用
+        // 通过特殊值 identity=-1 让 Controller 层区分"密码错误"和"被禁用"两种场景
         if (userAuth.getEnable() != null && !userAuth.getEnable()) {
             return new UserLoginResponse(
                     userAuth.getUserId(),
                     userAuth.getUsername(),
                     "",
-                    -1  // -1 表示被禁用
+                    -1  // -1 表示被禁用，Controller 层据此返回 403
             );
         }
 
+        // 登录成功，查询 User 表获取昵称
         User user = userRepository.findById(userAuth.getUserId()).orElse(null);
         if (user == null) {
             return null;
         }
 
+        // 返回不含密码的用户信息
+        // *组装一个DTO并返回
         return new UserLoginResponse(
                 user.getId(),
                 userAuth.getUsername(),
                 user.getNickname(),
-                userAuth.getIdentity()
+                userAuth.getIdentity()  // 0=顾客，1=管理员
         );
     }
 
+    /**
+     * 获取所有用户列表（管理员专用）
+     *
+     * 关联 User 和 UserAuth 两张表的数据，组装成完整信息。
+     *
+     * @return List<{ id, userId, username, nickname, email, identity, enable }>
+     */
     @Override
     public List<Map<String, Object>> listAllUsers() {
         List<UserAuth> auths = userAuthRepository.findAll();
@@ -127,6 +193,15 @@ public class UserServiceImpl implements UserService {
         return result;
     }
 
+    /**
+     * 切换用户启用/禁用状态
+     *
+     * 如果用户当前是启用 → 禁用；禁用 → 启用。
+     * 被禁用的用户登录时会收到"您的账号已经被禁用"的提示。
+     *
+     * @param userId 目标用户的 ID
+     * @return { message: "用户已启用/用户已禁用", enable: true/false }
+     */
     @Override
     @Transactional
     public Map<String, Object> toggleUserStatus(Long userId) {
@@ -136,6 +211,7 @@ public class UserServiceImpl implements UserService {
             res.put("error", "用户不存在");
             return res;
         }
+        // 取反：当前 true → false，当前 false → true
         boolean newStatus = auth.getEnable() == null || !auth.getEnable();
         auth.setEnable(newStatus);
         userAuthRepository.save(auth);

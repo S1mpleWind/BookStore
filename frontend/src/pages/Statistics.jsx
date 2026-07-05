@@ -5,6 +5,13 @@ import { getSalesRanking, getConsumptionRanking, getMyStatistics } from '../api'
 
 const { RangePicker } = DatePicker;
 
+/**
+ * 数据统计页面
+ *
+ * 根据用户角色展示不同内容：
+ * - 管理员：热销榜（Tab）+ 消费榜（Tab），支持按时间范围过滤
+ * - 顾客：个人购买统计（总本数、总金额、每本书的购买明细），支持按时间范围过滤
+ */
 const Statistics = () => {
   const { user } = useUser();
   const isAdmin = user?.identity === 1;
@@ -14,6 +21,7 @@ const Statistics = () => {
   const [myStats, setMyStats] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  /** 加载统计数据 */
   const loadData = () => {
     setLoading(true);
     const start = dateRange?.[0]?.toISOString();
@@ -45,12 +53,16 @@ const Statistics = () => {
   return (
     <div className="content-inner">
       <h1 className="page-title">{isAdmin ? '数据统计' : '我的统计'}</h1>
+
+      {/* 时间范围选择 */}
       <div style={{ marginBottom: 16 }}>
         <RangePicker showTime onChange={setDateRange} />
         <button onClick={loadData} style={{ marginLeft: 8, padding: '4px 16px' }}>查询</button>
       </div>
+
       {loading ? <Spin /> : (
         isAdmin ? (
+          /* ── 管理员视图：热销榜 + 消费榜（双 Tab） ── */
           <Tabs items={[
             {
               key: 'sales',
@@ -64,6 +76,7 @@ const Statistics = () => {
             },
           ]} />
         ) : (
+          /* ── 顾客视图：个人统计 ── */
           myStats ? (
             <div>
               <p><strong>购买总本数：</strong>{myStats.totalBooks} 本</p>

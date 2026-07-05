@@ -5,6 +5,19 @@ import { DatePicker, Input, Button, Table, Spin, Empty } from 'antd';
 
 const { RangePicker } = DatePicker;
 
+/**
+ * 我的订单页面（顾客）
+ *
+ * 功能：
+ * - 显示当前用户的所有订单
+ * - 支持按时间范围、书名搜索过滤订单
+ * - 点击订单行可展开查看订单项明细
+ *
+ * 搜索条件可组合使用：
+ * - 仅时间范围
+ * - 仅书名
+ * - 时间范围 + 书名
+ */
 const Order = () => {
   const { user } = useUser();
   const [orders, setOrders] = useState([]);
@@ -12,6 +25,7 @@ const Order = () => {
   const [bookTitle, setBookTitle] = useState('');
   const [dateRange, setDateRange] = useState(null);
 
+  /** 从后端加载订单数据（带搜索条件） */
   const loadOrders = () => {
     setLoading(true);
     const params = {};
@@ -26,6 +40,7 @@ const Order = () => {
 
   useEffect(() => { loadOrders(); }, []);
 
+  /** 表格列定义（订单头信息） */
   const columns = [
     { title: '订单号', dataIndex: 'id', key: 'id' },
     { title: '收货人', dataIndex: 'receiver', key: 'receiver' },
@@ -35,6 +50,7 @@ const Order = () => {
     { title: '时间', dataIndex: 'createdAt', key: 'createdAt', render: (v) => new Date(v).toLocaleString() },
   ];
 
+  /** 展开行：显示该订单包含的书籍明细 */
   const expandedRowRender = (record) => (
     <Table
       rowKey="id"
@@ -51,6 +67,8 @@ const Order = () => {
   return (
     <div className="content-inner">
       <h1 className="page-title">我的订单</h1>
+
+      {/* 搜索过滤栏 */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <RangePicker showTime onChange={setDateRange} placeholder={['开始时间', '结束时间']} />
         <Input.Search
@@ -62,6 +80,8 @@ const Order = () => {
         />
         <Button onClick={() => { setDateRange(null); setBookTitle(''); }}>重置</Button>
       </div>
+
+      {/* 订单列表 */}
       {loading ? <Spin /> : (
         orders.length === 0 ? <Empty description="暂无订单" /> :
           <Table

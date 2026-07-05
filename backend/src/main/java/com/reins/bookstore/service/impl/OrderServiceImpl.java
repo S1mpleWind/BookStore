@@ -96,6 +96,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
+    //使用事务，确保系列操作的原子性
     public OrderDTO createOrder(Long userId, String receiver, String address, String tel) {
         List<Cart> cartItems = cartRepository.findByUser_Id(userId);
         if (cartItems.isEmpty()) {

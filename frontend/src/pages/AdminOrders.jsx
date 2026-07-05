@@ -4,12 +4,22 @@ import { getAllOrders } from '../api';
 
 const { RangePicker } = DatePicker;
 
+/**
+ * 订单管理页面（管理员专用）
+ *
+ * 功能与 Order.jsx（顾客订单页）类似，区别在于：
+ * - 显示系统中所有用户的订单（而非仅当前用户）
+ * - 调用 getAllOrders() → GET /api/v1/orders/all（后端校验管理员身份）
+ *
+ * 支持按时间范围、书名搜索过滤。
+ */
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [bookTitle, setBookTitle] = useState('');
   const [dateRange, setDateRange] = useState(null);
 
+  /** 加载全部订单（带搜索条件） */
   const loadOrders = () => {
     setLoading(true);
     const params = {};
@@ -46,11 +56,14 @@ const AdminOrders = () => {
   return (
     <div className="content-inner">
       <h1 className="page-title">订单管理（全部订单）</h1>
+
+      {/* 搜索过滤栏 */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <RangePicker showTime onChange={setDateRange} />
         <Input.Search placeholder="搜索书名" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} onSearch={loadOrders} style={{ width: 200 }} />
         <Button onClick={() => { setDateRange(null); setBookTitle(''); }}>重置</Button>
       </div>
+
       {loading ? <Spin /> : (
         orders.length === 0 ? <Empty description="暂无订单" /> :
         <Table rowKey="id" dataSource={orders} columns={columns} expandable={{ expandedRowRender }} />

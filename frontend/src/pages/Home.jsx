@@ -3,13 +3,26 @@ import { Link } from 'react-router-dom';
 import { Input, Button, Spin, Empty } from 'antd';
 import { getBooks } from '../api';
 
+/** 推荐书籍的 ID 列表（在首页突出展示） */
 const recommendIdList = [1, 2];
 
+/**
+ * 首页——书籍浏览
+ *
+ * 功能：
+ * - 展示所有书籍的卡片列表（推荐书单 + 全部书籍）
+ * - 支持按书名搜索（调用后端 API 模糊匹配）
+ * - 点击"查看详情"进入书籍详情页
+ *
+ * 数据流：
+ * 页面加载 → useEffect → getBooks() → GET /api/v1/book → 后端查数据库 → 返回 JSON
+ */
 const Home = () => {
-  const [q, setQ] = useState('');
-  const [books, setBooks] = useState([]);
+  const [q, setQ] = useState('');         // 搜索框输入值
+  const [books, setBooks] = useState([]);  // 书籍列表数据
   const [loading, setLoading] = useState(true);
 
+  /** 从后端加载书籍数据（支持按书名筛选） */
   const loadBooks = (title) => {
     setLoading(true);
     getBooks(title)
@@ -18,8 +31,10 @@ const Home = () => {
       .finally(() => setLoading(false));
   };
 
+  /** 页面加载时获取全部书籍 */
   useEffect(() => { loadBooks(); }, []);
 
+  /** 搜索回调：输入不为空则按书名过滤，否则返回全部 */
   const handleSearch = (value) => {
     if (value.trim()) {
       loadBooks(value.trim());
@@ -28,17 +43,20 @@ const Home = () => {
     }
   };
 
+  /** 从全部书籍中筛选出推荐书籍（用于顶部的推荐区域） */
   const recommended = useMemo(
     () => books.filter((b) => recommendIdList.includes(Number(b.id))),
     [books]
   );
 
+  // 加载中状态
   if (loading) {
     return <div style={{ textAlign: 'center', padding: '100px' }}><Spin size="large" /></div>;
   }
 
   return (
     <div className="content-inner">
+      {/* ── 搜索区域 ── */}
       <section className="hero-panel">
         <p className="hero-kicker">CURATED BOOKSHELF</p>
         <h1 className="page-title">精选书籍</h1>
@@ -54,11 +72,13 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ── 书籍列表 ── */}
       <section className="catalog-shell">
         {books.length === 0 ? (
           <Empty description="暂无书籍数据" />
         ) : (
           <>
+            {/* 推荐书单区域 */}
             {recommended.length > 0 && (
               <>
                 <div className="section-head">
@@ -90,6 +110,7 @@ const Home = () => {
               </>
             )}
 
+            {/* 全部书籍列表 */}
             <div className="section-head" style={{ marginTop: 16 }}>
               <h2>全部书籍</h2>
               <p className="muted">共 {books.length} 本</p>

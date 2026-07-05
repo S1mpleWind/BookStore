@@ -21,7 +21,9 @@
 - **Controller 层**: 暴露 RESTful 接口，负责接收前端请求并返回 JSON 数据。
 - **Service 层**: 处理核心业务逻辑（如订单计算、库存校验）。采用接口与实现分离（Service Interface + ServiceImpl），提高扩展性。
 - **Data Access 层 (Repository)**: 继承 JpaRepository，使用 Spring Data JPA 实现对 MySQL 的高效访问。
-Entity 层: 将数据库表映射为 Java 实体类，实现数据模型化处理。
+- DTO 层：在前端和后端之间引入Data Transfer Object
+- Entity 层: 将数据库表映射为 Java 实体类，实现数据模型化处理。
+- interceptor层：使用cookie保护session，防止id劫持
 
 ## 🛠️ 实现功能清单
 

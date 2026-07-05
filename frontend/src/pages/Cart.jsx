@@ -5,8 +5,15 @@ import { Button, Empty, Spin, Modal, Input, App } from 'antd';
 import { getCart, deleteCartItem, updateCartItem, getBookById, createOrder, clearCart } from '../api';
 
 /**
- * Cart 页面：显示购物车内容。
- * 支持从后端加载购物车数据，并在结算前弹出确认框。
+ * 购物车页面
+ * 显示当前用户的购物车内容，支持修改数量、删除商品、结算下单。
+ *
+ * 数据流：
+ * 1. 页面加载 → getCart(userId) → 后端查 cart_item 表 → 返回购物车项
+ * 2. 购物车项只包含 bookId，还需要 getBookById() 获取每本书的详细信息
+ * 3. 结算时 → createOrder() → 后端扣库存、生成订单、清空购物车
+ *
+ * 注意：购物车数据存在后端数据库（cart_item 表）中，而非本地 localStorage。
  */
 const Cart = () => {
     const { user } = useUser();
@@ -14,14 +21,16 @@ const Cart = () => {
     const { message } = App.useApp();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [debugLines, setDebugLines] = useState([]);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [receiverInput, setReceiverInput] = useState('');
-    const [addressInput, setAddressInput] = useState('东川路800号');
-    const [telInput, setTelInput] = useState('123456789');
+    const [debugLines, setDebugLines] = useState([]);          // 调试日志
+    const [showConfirmModal, setShowConfirmModal] = useState(false);  // 结算确认弹窗
+    const [receiverInput, setReceiverInput] = useState('');    // 收货人
+    const [addressInput, setAddressInput] = useState('东川路800号');  // 收货地址
+    const [telInput, setTelInput] = useState('123456789');     // 联系电话
 
-    const debug = false
+    // 调试模式开关（设为 true 可查看调试信息）
+    const debug = false;
 
+    /** 记录调试日志 */
     const pushDebug = (line) => {
         if (debug){
             setDebugLines((current) => [...current, `[${new Date().toLocaleTimeString()}] ${line}`]);
@@ -29,6 +38,11 @@ const Cart = () => {
         }
     };
 
+    /**
+     * 从后端加载购物车数据
+     * 1. 先调用 getCart() 获取购物车项（含 bookId）
+     * 2. 再对每个 item 调用 getBookById() 获取书籍详情（封面、书名、价格）
+     */
     const fetchCartData = useCallback(async () => {
         if (!user?.userId) return;
 
@@ -38,6 +52,7 @@ const Cart = () => {
             const result = await getCart(user.userId);
             pushDebug(`购物车接口返回，items=${Array.isArray(result.items) ? result.items.length : 'invalid'}`);
             if (result.items && Array.isArray(result.items)) {
+                // 逐个获取书籍详情（Promise.all 并发请求）
                 const itemsWithDetails = await Promise.all(
                     result.items.map(async (item) => {
                         try {
@@ -72,6 +87,7 @@ const Cart = () => {
         fetchCartData();
     }, [fetchCartData]);
 
+    /** 删除购物车中的某一项 */
     const handleRemoveItem = async (cartItemId) => {
         try {
             await deleteCartItem(cartItemId);
@@ -82,6 +98,7 @@ const Cart = () => {
         }
     };
 
+    /** 修改某件商品的数量 */
     const handleUpdateQuantity = async (cartItemId, newQuantity) => {
         if (newQuantity <= 0) {
             handleRemoveItem(cartItemId);
@@ -98,11 +115,12 @@ const Cart = () => {
         }
     };
 
+    /** 购物车汇总计算 */
     const totalCount = cartItems.reduce((acc, item) => acc + (item.number || 0), 0);
     const totalPrice = cartItems.reduce((acc, item) => acc + ((item.price || 0) * (item.number || 0)), 0) / 100;
     const bookKinds = cartItems.length;
 
-    // TODO bugs here
+    /** 打开结算确认弹窗 */
     const handleCheckout = async () => {
         if (!user?.userId) {
             message.warning('请先登录');
@@ -110,7 +128,7 @@ const Cart = () => {
             return;
         }
 
-        // 初始化弹窗的默认值
+        // 设置默认收货信息
         setReceiverInput(user?.nickname || user?.username || '未填写');
         setAddressInput('东川路800号');
         setTelInput('123456789');
@@ -118,6 +136,7 @@ const Cart = () => {
         pushDebug(`打开确认弹窗，默认 receiver=${user?.nickname || user?.username}, address=东川路800号, tel=123456789`);
     };
 
+    /** 提交订单 */
     const submitOrderFromModal = async () => {
         setShowConfirmModal(false);
         pushDebug(`用户确认弹窗：receiver=${receiverInput}, address=${addressInput}, tel=${telInput}`);
@@ -132,6 +151,7 @@ const Cart = () => {
 
             pushDebug(`准备调用 createOrder，payload=${JSON.stringify(orderPayload)}`);
 
+            // 调用后端创建订单（后端事务中会扣库存、生成订单项、清空购物车）
             await createOrder(orderPayload);
             pushDebug('createOrder 成功，准备跳转到 /order');
 
@@ -143,6 +163,7 @@ const Cart = () => {
 
             pushDebug('navigate(/order) 已执行');
 
+            // 后端 createOrder 已清空购物车，前端再次调用 clearCart 作为双重保障
             clearCart(user.userId).catch((error) => {
                 console.error('Failed to clear cart after checkout:', error);
                 pushDebug(`清空购物车失败：${error?.message || error}`);
@@ -173,6 +194,7 @@ const Cart = () => {
             <h1 className="page-title">我的购物车</h1>
 
             {cartItems.length === 0 ? (
+                /* ── 空购物车 ── */
                 <div className="empty-state">
                     <Empty description="购物车目前是空的" />
                     <Link to="/">
@@ -180,7 +202,9 @@ const Cart = () => {
                     </Link>
                 </div>
             ) : (
+                /* ── 购物车内容 ── */
                 <div className="cart-layout">
+                    {/* 商品列表 */}
                     <section className="cart-list" aria-label="购物车条目列表">
                         {cartItems.map((item) => (
                             <article className="card book-detail cart-item" key={item.id}>
@@ -192,6 +216,7 @@ const Cart = () => {
                                         <h2>{item.title}</h2>
                                         <p className="muted">作者：{item.author}</p>
                                         <p className="price">单价：¥{((item.price || 0) / 100).toFixed(2)}</p>
+                                        {/* 数量加减 */}
                                         <div className="qty-controls">
                                             <span>数量：</span>
                                             <Button size="small" onClick={() => handleUpdateQuantity(item.id, item.number - 1)}>-</Button>
@@ -207,6 +232,7 @@ const Cart = () => {
                         ))}
                     </section>
 
+                    {/* 结算摘要 */}
                     <aside className="cart-summary card" aria-label="购物车汇总">
                         <h2>结算摘要</h2>
                         <p className="muted">当前已选择 <strong>{bookKinds}</strong> 种书籍</p>
@@ -224,6 +250,8 @@ const Cart = () => {
                             <strong>¥{totalPrice.toFixed(2)}</strong>
                         </div>
                         <Button type="primary" onClick={handleCheckout}>确认下单并结算</Button>
+
+                        {/* 调试信息面板 */}
                         {debugLines.length > 0 ? (
                             <div style={{ marginTop: 16, padding: 12, background: '#f6f8fa', border: '1px solid #d0d7de', borderRadius: 8, fontSize: 12, lineHeight: 1.6 }}>
                                 <div style={{ fontWeight: 600, marginBottom: 8 }}>结算调试信息</div>
@@ -235,6 +263,8 @@ const Cart = () => {
                     </aside>
                 </div>
             )}
+
+            {/* ── 结算确认弹窗 ── */}
             <Modal
                 open={showConfirmModal}
                 title="确认订单"

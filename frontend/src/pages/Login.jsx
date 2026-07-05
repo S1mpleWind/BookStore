@@ -4,6 +4,22 @@ import { Form, Input, Button, Tabs, Alert, App } from 'antd';
 import { loginUser, registerUser } from '../api';
 import { useUser } from '../components/UserContext';
 
+/**
+ * 登录/注册页面
+ *
+ * 功能：
+ * - 登录 Tab：用户名 + 密码 → 调用后端登录接口
+ * - 注册 Tab：用户名 + 密码 + 确认密码 + 邮箱 + 昵称 → 注册后自动登录
+ *
+ * 错误处理：
+ * - HTTP 401 → "用户名或密码错误"
+ * - HTTP 403 → "您的账号已经被禁用"
+ * - 其他错误 → 显示后端返回的具体错误信息
+ *
+ * 登录成功后：
+ * - 调用 UserContext.login() 保存用户状态到 localStorage
+ * - 跳转到来源页面（记录在 location.state.from 中）
+ */
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -14,8 +30,13 @@ const Login = () => {
   const [registerForm] = Form.useForm();
   const [authError, setAuthError] = useState('');
 
+  /** 登录成功后的跳转目标（登录前在哪里，登录后跳回哪里） */
   const from = location.state?.from?.pathname || '/';
 
+  /**
+   * 解析后端返回的错误信息
+   * 将 fetch 抛出的 Error 还原为可读的文本
+   */
   const parseErrorMessage = (error) => {
     try {
       const body = JSON.parse(error.message);
@@ -29,13 +50,14 @@ const Login = () => {
     }
   };
 
+  /** 处理登录 */
   const handleLogin = async (values) => {
     setAuthError('');
     try {
       const user = await loginUser(values);
-      login(user);
+      login(user);                        // 保存到 UserContext + localStorage
       message.success('登录成功');
-      navigate(from, { replace: true });
+      navigate(from, { replace: true });  // 跳回来源页
     } catch (error) {
       const errorText = parseErrorMessage(error);
       setAuthError(errorText);
@@ -43,6 +65,7 @@ const Login = () => {
     }
   };
 
+  /** 处理注册（注册成功后自动登录） */
   const handleRegister = async (values) => {
     setAuthError('');
     try {
@@ -54,6 +77,7 @@ const Login = () => {
         email: values.email,
       };
       await registerUser(payload);
+      // 注册成功后自动登录
       const user = await loginUser({ username: values.username, password: values.password });
       login(user);
       message.success('注册成功，已自动登录');
@@ -72,6 +96,7 @@ const Login = () => {
         <h1 className="page-title">登录电子书店</h1>
         <p className="muted">登录后即可浏览书籍、购物车和订单。</p>
 
+        {/* 错误提示 */}
         {authError ? (
           <Alert style={{ marginBottom: 16 }} type="error" showIcon message={authError} />
         ) : null}
