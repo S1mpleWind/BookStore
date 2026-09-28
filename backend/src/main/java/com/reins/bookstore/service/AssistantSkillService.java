@@ -15,6 +15,7 @@ public class AssistantSkillService {
         this.bookRepository = bookRepository;
     }
 
+    //* skills are defined here
     public Map<String, Object> checkInventory(String isbn) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("isbn", isbn);
