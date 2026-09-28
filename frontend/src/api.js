@@ -252,3 +252,7 @@ export async function getMyStatistics(start, end) {
   const qs = q.toString();
   return getJson(`${API_BASE}/statistics/my-purchases${qs ? '?' + qs : ''}`);
 }
+/** AI 客服助手：发送对话消息并执行后端 Function Calling */
+export async function chatWithAssistant(messages) {
+  return postJson(`${API_BASE}/assistant/chat`, { messages });
+}

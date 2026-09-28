@@ -74,3 +74,66 @@
 ## TODO
 
 - 权限漏洞：出于简单的实现，`CartController`和`OrderController`中的结构直接依赖userId，可能会带来漏洞，后续需要可以应用 *Security* 架构修补
+
+## 🤖 Function Calling 智能客服助手
+
+项目现已包含 `/assistant` 智能客服页面：首页右下角的悬浮按钮也可以打开轻量助手。助手支持查询本店 ISBN 库存，并使用确定性的本地模拟数据查询竞争对手价格。
+
+启动后端前配置真实 OpenAI API Key（不要写入源码）：
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+export OPENAI_MODEL="gpt-4o-mini"       # 可选
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # 可选
+```
+
+后端接口为 `POST /api/v1/assistant/chat`。后端控制台会打印类似下面的 Function Calling 日志，前端也会展示工具参数和结果：
+
+```text
+[Function Calling] name=check_inventory, arguments={"isbn":"978-7-5302-1015-3"}
+```
+
+未配置 `OPENAI_API_KEY` 时不会执行本地伪造的模型回复，接口会返回明确的配置错误。
+
+## ⚠️ 前端登录出现 `Failed to fetch` 的排查
+
+如果前端登录时一直显示 `Failed to fetch`，通常不是用户名或密码错误，而是前端与后端之间的跨域/地址访问问题。当前前端默认请求：
+
+```text
+http://localhost:8080/api/v1
+```
+
+后端 CORS 当前允许的前端地址是：
+
+```text
+http://localhost:5173
+```
+
+因此浏览器请使用：
+
+```text
+http://localhost:5173
+```
+
+不要将前端页面改用 `http://127.0.0.1:5173` 访问，否则可能因为 Origin 不一致而触发 CORS 错误。
+
+如果后端运行在 WSL，而浏览器运行在 Windows，浏览器访问的 `localhost:8080` 还可能受到 WSL 端口转发或系统代理影响。建议检查：
+
+```powershell
+curl.exe -i http://localhost:8080/api/v1/users/login
+```
+
+如果浏览器或代理软件开启了代理，请将以下地址加入代理绕过列表：
+
+```text
+localhost
+127.0.0.1
+::1
+```
+
+常见现象：
+
+- 返回 `401`：网络和跨域正常，通常是用户名或密码错误。
+- 返回 `405`：接口可访问，但请求方法不正确；登录接口需要使用 `POST`。
+- 浏览器显示 `Failed to fetch` 或 `ERR_CONNECTION_REFUSED`：浏览器无法访问后端，优先检查 WSL 端口、浏览器代理和 localhost 配置。
+- 浏览器控制台显示 `CORS error`：检查前端访问地址是否为 `http://localhost:5173`，以及后端 CORS 配置是否允许该 Origin。

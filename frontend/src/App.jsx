@@ -13,6 +13,8 @@ import ManageBooks from './pages/ManageBooks';
 import ManageUsers from './pages/ManageUsers';
 import AdminOrders from './pages/AdminOrders';
 import Statistics from './pages/Statistics';
+import Assistant from './pages/Assistant';
+import AssistantWidget from './components/AssistantWidget';
 import { CartProvider } from './components/CartContext';
 import { UserProvider } from './components/UserContext';
 import './styles/style.css';
@@ -94,6 +96,7 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
 
           {/* 顾客和管理员都可用 */}
           <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+          <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
 
           {/* 管理员专用 */}
           <Route path="/manage-books" element={<ProtectedRoute adminOnly><ManageBooks /></ProtectedRoute>} />
@@ -103,6 +106,7 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
           {/* 未匹配路由 → 兜底重定向 */}
           <Route path="*" element={<Navigate to={isLoggedIn() ? '/' : '/login'} replace />} />
         </Routes>
+        {location.pathname === '/' && <AssistantWidget />}
       </main>
     </div>
   );

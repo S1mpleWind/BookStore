@@ -40,6 +40,12 @@ const Navbar = () => {
             <span className="nav-label">书籍浏览</span>
           </NavLink>
         </li>
+        <li>
+          <NavLink to="/assistant" className={({ isActive }) => (isActive ? 'active' : '')}>
+            <span className="nav-icon">✦</span>
+            <span className="nav-label">智能助手</span>
+          </NavLink>
+        </li>
 
         {/* ── 顾客菜单 ── */}
         {!isAdmin ? (
