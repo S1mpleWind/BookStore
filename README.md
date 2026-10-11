@@ -137,3 +137,35 @@ localhost
 - 返回 `405`：接口可访问，但请求方法不正确；登录接口需要使用 `POST`。
 - 浏览器显示 `Failed to fetch` 或 `ERR_CONNECTION_REFUSED`：浏览器无法访问后端，优先检查 WSL 端口、浏览器代理和 localhost 配置。
 - 浏览器控制台显示 `CORS error`：检查前端访问地址是否为 `http://localhost:5173`，以及后端 CORS 配置是否允许该 Origin。
+
+## 📦 打包源码和文档
+
+项目根目录提供了打包脚本：
+
+```bash
+./package_submission.sh
+```
+
+脚本会生成类似下面的压缩包：
+
+```text
+bookstore-source-submission-20260928_153000.zip
+```
+
+也可以指定输出文件名：
+
+```bash
+./package_submission.sh bookstore-homework.zip
+```
+
+压缩包会包含源码、配置、数据库脚本、图片资源和项目文档，但会排除：
+
+- `node_modules/`
+- `backend/target/`
+- `frontend/dist/`
+- `.git/`
+- Maven Wrapper 的二进制依赖包
+- 已有的 `.zip` 压缩包
+- `backend/application-local.properties`
+- `.env`、密钥和证书文件
+- 日志和 `.class` 编译产物
