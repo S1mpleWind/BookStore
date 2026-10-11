@@ -30,7 +30,8 @@ global.fetch = vi.fn();
 
 describe('api.js', () => {
   beforeEach(() => {
-    fetch.mockClear();
+    fetch.mockReset();
+    localStorage.clear();
   });
 
   // ========== BOOKS ==========
@@ -44,7 +45,7 @@ describe('api.js', () => {
       });
 
       const result = await getBooks();
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/book', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/books', { headers: {} });
       expect(result).toEqual(mockBooks);
     });
 
@@ -56,7 +57,7 @@ describe('api.js', () => {
       });
 
       const result = await getBooks('Spring');
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/book?title=Spring', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/books?title=Spring', { headers: {} });
       expect(result).toEqual(mockBooks);
     });
 
@@ -67,7 +68,7 @@ describe('api.js', () => {
       });
 
       await getBooks('C# Programming');
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/book?title=C%23%20Programming', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/books?title=C%23%20Programming', { headers: {} });
     });
 
     it('should throw on non-ok response', async () => {
@@ -89,7 +90,7 @@ describe('api.js', () => {
       });
 
       const result = await getBookById(1);
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/book/1', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/books/1', { headers: {} });
       expect(result).toEqual(mockBook);
     });
 
@@ -115,10 +116,9 @@ describe('api.js', () => {
 
       const result = await addBook(bookData);
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/book',
+        'http://localhost:8080/api/v1/books',
         expect.objectContaining({
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(bookData),
         })
@@ -149,10 +149,9 @@ describe('api.js', () => {
 
       const result = await updateBook(1, updates);
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/book/1',
+        'http://localhost:8080/api/v1/books/1',
         expect.objectContaining({
           method: 'PUT',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updates),
         })
@@ -181,8 +180,8 @@ describe('api.js', () => {
 
       const result = await deleteBook(1);
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:8080/api/v1/book/1',
-        { method: 'DELETE', credentials: 'include' }
+        'http://localhost:8080/api/v1/books/1',
+        { method: 'DELETE', headers: {} }
       );
       expect(result).toEqual(mockResponse);
     });
@@ -215,7 +214,6 @@ describe('api.js', () => {
         'http://localhost:8080/api/v1/users/login',
         expect.objectContaining({
           method: 'POST',
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials),
         })
@@ -324,7 +322,7 @@ describe('api.js', () => {
       });
 
       const result = await getUsersList();
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/users/list', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/users/list', { headers: {} });
       expect(result).toHaveLength(2);
     });
 
@@ -365,7 +363,7 @@ describe('api.js', () => {
       });
 
       const result = await getCart(1);
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/cart/1', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/cart/1', { headers: {} });
       expect(result).toHaveLength(1);
     });
   });
@@ -436,7 +434,7 @@ describe('api.js', () => {
       await deleteCartItem(1);
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/cart/1',
-        { method: 'DELETE', credentials: 'include' }
+        { method: 'DELETE', headers: {} }
       );
     });
   });
@@ -451,7 +449,7 @@ describe('api.js', () => {
       await clearCart(1);
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/cart/user/1',
-        { method: 'DELETE', credentials: 'include' }
+        { method: 'DELETE', headers: {} }
       );
     });
   });
@@ -489,7 +487,7 @@ describe('api.js', () => {
       });
 
       const result = await getMyOrders();
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/orders', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/orders', { headers: {} });
       expect(result).toHaveLength(1);
     });
 
@@ -519,7 +517,7 @@ describe('api.js', () => {
       });
 
       const result = await getAllOrders();
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/orders/all', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/orders/all', { headers: {} });
       expect(result).toHaveLength(2);
     });
 
@@ -543,7 +541,7 @@ describe('api.js', () => {
       });
 
       const result = await getOrderById(1);
-      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/order/1', { credentials: 'include' });
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8080/api/v1/order/1', { headers: {} });
       expect(result.receiver).toBe('John');
     });
   });
@@ -561,7 +559,7 @@ describe('api.js', () => {
       const result = await getSalesRanking();
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/statistics/sales',
-        { credentials: 'include' }
+        { headers: {} }
       );
       expect(result[0].sales).toBe(100);
     });
@@ -587,7 +585,7 @@ describe('api.js', () => {
       const result = await getConsumptionRanking();
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/statistics/consumption',
-        { credentials: 'include' }
+        { headers: {} }
       );
       expect(result[0].totalAmount).toBe(5000);
     });
@@ -604,7 +602,7 @@ describe('api.js', () => {
       const result = await getMyStatistics();
       expect(fetch).toHaveBeenCalledWith(
         'http://localhost:8080/api/v1/statistics/my-purchases',
-        { credentials: 'include' }
+        { headers: {} }
       );
       expect(result.totalBooks).toBe(5);
       expect(result.totalAmount).toBe(15000);

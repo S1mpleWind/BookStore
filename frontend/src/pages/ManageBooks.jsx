@@ -13,7 +13,7 @@ import { getBooks, addBook, updateBook, deleteBook } from '../api';
  * - 删除书籍（带确认弹窗）
  *
  * 所有写操作（增/删/改）都会调用后端 API，
- * 后端会校验当前用户的管理员身份（Session identity == 1）。
+ * 后端会校验当前用户的管理员身份（JWT 验证后 identity == 1）。
  */
 const ManageBooks = () => {
   const [books, setBooks] = useState([]);

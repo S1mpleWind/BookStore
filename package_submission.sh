@@ -1,58 +1,46 @@
 #!/usr/bin/env bash
 set -euo pipefail
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 - "$PROJECT_DIR" "${1:-}" <<'PY'
+from datetime import datetime
+from pathlib import Path
+import sys
+from zipfile import ZipFile, ZIP_DEFLATED
 
-# 打包课程项目的源码、配置、数据库脚本和文档。
-# 默认输出到当前项目目录，不包含依赖库、构建产物、Git 数据和本地密钥。
-
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-STAMP="$(date +%Y%m%d_%H%M%S)"
-OUTPUT="${1:-${ROOT_DIR}/bookstore-source-submission-${STAMP}.zip}"
-
-if ! command -v zip >/dev/null 2>&1; then
-  echo "错误：未找到 zip 命令。Ubuntu/Debian 可执行：sudo apt install zip" >&2
-  exit 1
-fi
-
-case "$OUTPUT" in
-  /*) ;;
-  *) OUTPUT="${ROOT_DIR}/${OUTPUT}" ;;
-esac
-
-mkdir -p "$(dirname "$OUTPUT")"
-rm -f "$OUTPUT"
-
-cd "$ROOT_DIR"
-
-zip -rq "$OUTPUT" . \
-  -x './.git/*' \
-  -x './.idea/*' \
-  -x './.vscode/*' \
-  -x './**/node_modules/*' \
-  -x './frontend/node_modules/*' \
-  -x './frontend/dist/*' \
-  -x './frontend/.vite/*' \
-  -x './backend/target/*' \
-  -x './**/target/*' \
-  -x './backend/.mvn/wrapper/maven-wrapper.jar' \
-  -x './**/*.class' \
-  -x './**/*.log' \
-  -x './*.zip' \
-  -x './**/*.zip' \
-  -x './backend/application-local.properties' \
-  -x './**/application-local.properties' \
-  -x './.env' \
-  -x './.env.*' \
-  -x './**/.env' \
-  -x './**/.env.*' \
-  -x './*.key' \
-  -x './**/*.key' \
-  -x './*.pem' \
-  -x './**/*.pem' \
-  -x "./$(basename "$OUTPUT")"
-
-echo "打包完成：$OUTPUT"
-echo "文件大小：$(du -h "$OUTPUT" | cut -f1)"
-echo "内容检查："
-unzip -l "$OUTPUT" | grep -E '(^|/)(node_modules|target|\.git)(/|$)|application-local\.properties|\.env($|\.)' >/dev/null \
-  && { echo "警告：压缩包中可能包含被排除的文件，请检查。"; exit 1; } \
-  || true
+root = Path(sys.argv[1])
+output = Path(sys.argv[2]) if sys.argv[2] else root / f'bookstore-hw4-source-{datetime.now():%Y%m%d_%H%M%S}.zip'
+if not output.is_absolute():
+    output = root / output
+output.parent.mkdir(parents=True, exist_ok=True)
+# Explicit source allowlist; dependency directories and build output are never traversed.
+entries = ['.sdkmanrc', 'README.md', 'package_submission.sh', 'backend/pom.xml',
+           'backend/mvnw', 'backend/mvnw.cmd', 'backend/.mvn/wrapper/maven-wrapper.properties',
+           'backend/README_ARCH.md', 'backend/src', 'frontend/src', 'frontend/public',
+           'frontend/package.json', 'frontend/package-lock.json', 'frontend/index.html',
+           'frontend/vite.config.js', 'frontend/eslint.config.js', 'frontend/DESIGN_PRINCIPLES.md',
+           'database', 'docs', 'scripts']
+files = []
+for entry in entries:
+    candidate = root / entry
+    if not candidate.exists():
+        continue
+    for path in ([candidate] if candidate.is_file() else sorted(candidate.rglob('*'))):
+        if not path.is_file() or path.is_symlink():
+            continue
+        relative = path.relative_to(root)
+        if set(relative.parts) & {'node_modules', 'target', 'dist', '__pycache__', '.git'}:
+            continue
+        if path.suffix.lower() in {'.jar', '.class', '.zip', '.log', '.pyc', '.key', '.pem'}:
+            continue
+        if path.name.startswith('.env') or path.name == 'application-local.properties':
+            continue
+        files.append(path)
+if output.resolve() in {path.resolve() for path in files}:
+    raise SystemExit('输出路径不能覆盖待提交的源码文件')
+with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
+    for path in files:
+        archive.write(path, path.relative_to(root))
+with ZipFile(output) as archive:
+    assert not any(name.endswith(('.jar', '.class')) for name in archive.namelist())
+print(f'打包完成：{output}（{len(files)} 个源码、配置、脚本和文档文件）')
+PY

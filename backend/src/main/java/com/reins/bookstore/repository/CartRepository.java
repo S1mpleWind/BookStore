@@ -3,6 +3,7 @@ package com.reins.bookstore.repository;
 import com.reins.bookstore.entity.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -19,5 +20,6 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
      * 删除指定用户的所有购物车项
      * 通过关联路径 user.id 匹配
      */
+    @Transactional
     void deleteByUser_Id(Long userId);
 }

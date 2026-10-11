@@ -1,7 +1,20 @@
 
-# 📚 e-Bookstore 在线书店系统 (迭代 2)
+# 📚 e-Bookstore 在线书店系统（作业 4：JWT 与虚拟线程）
 
 本项目是一个基于 Spring Boot 后端与 React 前端构建的完整在线书店系统，实现了前后端数据贯通与持久化存储。
+
+## 作业 4 运行入口
+
+后端使用 Java 21，开启 Spring Boot 虚拟线程，并通过 JJWT 实现无状态登录认证。
+
+```bash
+sdk env
+./scripts/run-jwt-demo.sh
+```
+
+演示模式使用独立 H2 内存数据库，账号 `demo/demo123` 和 `admin/admin123`，默认模拟 300ms 查询等待。
+另开终端执行 `python3 scripts/verify-jwt.py` 验证 401、200 和真实 HTTP 请求的虚拟线程。
+完整运行、MySQL 配置、鉴权说明及截图方法见 [作业 4 说明](docs/HOMEWORK4.md)。
 
 ## 🚀 项目架构说明
 
@@ -23,7 +36,7 @@
 - **Data Access 层 (Repository)**: 继承 JpaRepository，使用 Spring Data JPA 实现对 MySQL 的高效访问。
 - DTO 层：在前端和后端之间引入Data Transfer Object
 - Entity 层: 将数据库表映射为 Java 实体类，实现数据模型化处理。
-- interceptor层：使用cookie保护session，防止id劫持
+- interceptor 层：校验 Bearer JWT，不创建登录 Session；权限使用数据库中的当前角色。
 
 ## 🛠️ 实现功能清单
 
@@ -37,7 +50,7 @@
 
 以“获取图书详情”为例，说明系统运行的全过程：
 
-1. 前端发起请求: 用户点击某本书籍，React 通过 fetch 向 http://localhost:8080/api/v1/book/{id} 发送 GET 请求。
+1. 前端发起请求: 用户点击某本书籍，React 通过 fetch 向 http://localhost:8080/api/v1/books/{id} 发送 GET 请求。
 2. 后端路由拦截: 后端 BookController 接收到请求，提取路径参数 id。
 3. 服务层处理: BookService 被调用，向 BookRepository 发出指令。
 4. 数据库访问: Spring Data JPA 自动生成 SQL 语句执行查询：SELECT * FROM book WHERE id = ?。

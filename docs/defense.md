@@ -12,7 +12,7 @@
 | **前端** | React 19 + React Router 7 + Ant Design 5 + Vite |
 | **后端** | Spring Boot 3.2 + Spring Data JPA + Maven |
 | **数据库** | MySQL 8.0（Docker 部署） |
-| **鉴权** | Session 机制（非 JWT） |
+| **鉴权** | Bearer JWT（JJWT，HS256） |
 
 ### 核心页面速览
 
@@ -146,47 +146,20 @@ private Book book;
 
 ---
 
-## 四、Session 鉴权（你的项目用 Session，不是 JWT）
+## 四、JWT 无状态鉴权
 
-### 登录流程
-
-```
-Login.jsx → POST /api/v1/users/login
-  → UserController.loginUser()
-    → UserServiceImpl.login()
-      → UserAuthRepository.findByUsername()
-      → 校验密码，校验 enable
-    → 创建 HttpSession（userId + identity）
-  → 返回 UserLoginResponse
-→ localStorage 存 user + isLoggedIn
-```
-
-### Session 拦截器
+登录验证密码后由 `JwtService` 签发 HS256 JWT，返回用户信息、token、tokenType 和 expiresIn。
+前端独立保存 Token，每次请求携带 `Authorization: Bearer <token>`。
+`JwtInterceptor` 验证算法、签名、过期时间、签发者、接收者和用户 ID，再查询数据库中的账号状态与角色。
+验证失败返回 401；验证成功将 userId 和 identity 写入当前 request；管理员权限不足返回 403。
+不创建 HttpSession，数据库保存的是持久化账号信息，不是登录 Session。
 
 ```java
-// 所有 /api/v1/* 请求都会被拦截（除 login/register）
-// 没有 Session → 返回 401
-public boolean preHandle(HttpServletRequest request, ...) {
-    HttpSession session = request.getSession(false);
-    if (session != null && session.getAttribute("userId") != null) {
-        return true;  // 放行
-    }
-    response.setStatus(401);  // 未登录
-    return false;
-}
+Integer identity = (Integer) request.getAttribute("identity");
+return identity != null && identity == 1;
 ```
 
-### 后端权限控制（不只是前端校验！）
-
-```java
-// 管理员操作额外校验 identity
-private boolean isAdmin(HttpServletRequest request) {
-    HttpSession session = request.getSession(false);
-    if (session == null) return false;
-    Integer identity = (Integer) session.getAttribute("identity");
-    return identity != null && identity == 1;
-}
-```
+详情与运行验证见 [HOMEWORK4.md](HOMEWORK4.md)。
 
 ---
 
@@ -316,13 +289,13 @@ JWT = Header.Payload.Signature
 
 > **JWT 默认不加密，只是签名。Header 和 Payload 是 Base64 编码的，任何人都可以解码看到内容。** 所以不要在 JWT 里放密码等敏感信息。如果需要加密，要用 JWE（JSON Web Encryption）。
 
-**你的项目不用 JWT，用 Session**：
+**Session 与当前 JWT 方案的区别**：
 
-| | Session（你） | JWT |
+| | Session | JWT |
 |------|-------------|-----|
-| 用户数据存哪 | 服务器内存 | Token 字符串本身 |
-| 多服务器 | 需要共享 Session | 天然支持 |
-| 主动踢人 | ✅ 服务器删即可 | ❌ 过期前都有效 |
+| 登录身份依据 | 服务端 Session | 已验证的 Token |
+| 多服务器 | 需要共享 Session | 共享签名密钥与验证配置 |
+| 账号禁用 | 需要额外检查或清理 Session | 本项目每次查账号状态，禁用立即生效 |
 
 ---
 
@@ -365,5 +338,5 @@ JWT = Header.Payload.Signature
 1. **JPA ORM 完整设计**：4 个实体间 3 种关联关系，cascade 合理配置
 2. **接口与实现分离**：Service 接口 + Impl，方便测试和替换
 3. **DTO 层**：隔离 Entity，不暴露敏感字段
-4. **Session 鉴权**：拦截器 + isAdmin 双重保障
+4. **JWT 鉴权**：签名与有效期校验 + 账号状态和权限检查
 5. **前端组件化**：ProtectedRoute 路由守卫，Context 全局状态

@@ -270,8 +270,8 @@ DTO 转换增加 `inventory`、`publisher`、`isbn` 字段映射。
 
 ## 五、技术要点
 
-1. **Session 鉴权**：所有 API 通过 `SessionInterceptor` 拦截，`/login` 和 `/register` 除外
-2. **管理权限控制**：Controller 层通过 `session.getAttribute("identity")` 校验管理员身份
+1. **JWT 鉴权**：所有 API 通过 `JwtInterceptor` 拦截，`/login` 和 `/register` 除外
+2. **管理权限控制**：Controller 层通过 `request.getAttribute("identity")` 校验管理员身份
 3. **事务管理**：下单操作使用 `@Transactional` 保证库存/销量更新的原子性
 4. **前后端分离**：后端返回 JSON + DTO，前端通过 fetch 异步通信
 5. **库存非负**：`Math.max(0, currentInventory - orderedQty)` 确保库存不为负

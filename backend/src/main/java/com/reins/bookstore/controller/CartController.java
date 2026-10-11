@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/cart")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class CartController {
 
     @Autowired
@@ -71,7 +71,10 @@ public class CartController {
      * @return { items: [CartItemDTO, ...] }
      */
     @GetMapping("/{userId}")
-    public ResponseEntity<?> getCartByUserId(@PathVariable Long userId) {
+    public ResponseEntity<?> getCartByUserId(@PathVariable Long userId, HttpServletRequest request) {
+        if (!userId.equals(request.getAttribute("userId"))) {
+            return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        }
         List<CartItemDTO> dtos = cartRepository.findByUser_Id(userId).stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -93,10 +96,13 @@ public class CartController {
      * @return { message: "Item added to cart" }
      */
     @PostMapping
-    public ResponseEntity<?> addToCart(@RequestBody AddToCartRequest request) {
-        Long userId = request.getUserId();
+    public ResponseEntity<?> addToCart(@RequestBody AddToCartRequest request, HttpServletRequest servletRequest) {
+        Long userId = (Long) servletRequest.getAttribute("userId");
         Long bookId = request.getBookId();
         Integer quantity = request.getQuantity();
+        if (quantity == null || quantity <= 0 || bookId == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "书籍和正整数数量不能为空"));
+        }
 
         // 查找 JPA 关联实体（不是直接操作外键 ID，而是通过实体建立关联）
         User user = userRepository.findById(userId).orElse(null);
@@ -136,16 +142,21 @@ public class CartController {
      * @return { message: "Cart item updated" } 或 404
      */
     @PutMapping("/{cartItemId}")
-    public ResponseEntity<?> updateCartItem(@PathVariable Long cartItemId, @RequestBody Map<String, Integer> params) {
+    public ResponseEntity<?> updateCartItem(@PathVariable Long cartItemId,
+                                             @RequestBody Map<String, Integer> params,
+                                             HttpServletRequest request) {
         Integer quantity = params.get("quantity");
-
-        return cartRepository.findById(cartItemId)
-                .map(item -> {
-                    item.setNumber(quantity);
-                    cartRepository.save(item);
-                    return ResponseEntity.ok(Map.of("message", "Cart item updated"));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        if (quantity == null || quantity <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "数量必须为正整数"));
+        }
+        Cart item = cartRepository.findById(cartItemId).orElse(null);
+        if (item == null) return ResponseEntity.notFound().build();
+        if (!item.getUserId().equals(request.getAttribute("userId"))) {
+            return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        }
+        item.setNumber(quantity);
+        cartRepository.save(item);
+        return ResponseEntity.ok(Map.of("message", "Cart item updated"));
     }
 
     /**
@@ -155,12 +166,14 @@ public class CartController {
      * @return { message: "Cart item deleted" } 或 404
      */
     @DeleteMapping("/{cartItemId}")
-    public ResponseEntity<?> deleteCartItem(@PathVariable Long cartItemId) {
-        if (cartRepository.existsById(cartItemId)) {
-            cartRepository.deleteById(cartItemId);
-            return ResponseEntity.ok(Map.of("message", "Cart item deleted"));
+    public ResponseEntity<?> deleteCartItem(@PathVariable Long cartItemId, HttpServletRequest request) {
+        Cart item = cartRepository.findById(cartItemId).orElse(null);
+        if (item == null) return ResponseEntity.notFound().build();
+        if (!item.getUserId().equals(request.getAttribute("userId"))) {
+            return ResponseEntity.status(403).body(Map.of("error", "无权限"));
         }
-        return ResponseEntity.notFound().build();
+        cartRepository.delete(item);
+        return ResponseEntity.ok(Map.of("message", "Cart item deleted"));
     }
 
     /**
@@ -174,7 +187,10 @@ public class CartController {
      * @return { message: "Cart cleared" }
      */
     @DeleteMapping("/user/{userId}")
-    public ResponseEntity<?> clearCart(@PathVariable Long userId) {
+    public ResponseEntity<?> clearCart(@PathVariable Long userId, HttpServletRequest request) {
+        if (!userId.equals(request.getAttribute("userId"))) {
+            return ResponseEntity.status(403).body(Map.of("error", "无权限"));
+        }
         cartRepository.deleteByUser_Id(userId);
         return ResponseEntity.ok(Map.of("message", "Cart cleared"));
     }

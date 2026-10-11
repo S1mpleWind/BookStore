@@ -5,6 +5,7 @@ import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.repository.BookRepository;
 import com.reins.bookstore.service.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,9 @@ public class BookServiceImpl implements BookService {
 
     @Autowired
     private BookRepository bookRepository;
+
+    @Value("${bookstore.query-delay-ms:0}")
+    private long queryDelayMs;
 
     private BookDTO toDTO(Book book) {
         return new BookDTO(
@@ -41,6 +45,14 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Optional<BookDTO> findById(Long id) {
+        if (queryDelayMs > 0) {
+            try {
+                Thread.sleep(queryDelayMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("图书查询被中断", e);
+            }
+        }
         return bookRepository.findById(id).map(this::toDTO);
     }
 

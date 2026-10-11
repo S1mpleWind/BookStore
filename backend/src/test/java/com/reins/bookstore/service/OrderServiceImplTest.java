@@ -6,6 +6,8 @@ import com.reins.bookstore.entity.Book;
 import com.reins.bookstore.entity.Cart;
 import com.reins.bookstore.entity.Order;
 import com.reins.bookstore.entity.OrderItem;
+import com.reins.bookstore.entity.User;
+import com.reins.bookstore.repository.UserRepository;
 import com.reins.bookstore.repository.BookRepository;
 import com.reins.bookstore.repository.CartRepository;
 import com.reins.bookstore.repository.OrderItemRepository;
@@ -41,6 +43,9 @@ class OrderServiceImplTest {
     @Mock
     private CartRepository cartRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
@@ -62,13 +67,13 @@ class OrderServiceImplTest {
 
         cartItem = new Cart();
         cartItem.setId(1L);
-        cartItem.setBookId(1L);
-        cartItem.setUserId(1L);
+        cartItem.setBook(testBook);
+        cartItem.setUser(userWithId(1L));
         cartItem.setNumber(2);
 
         testOrder = new Order();
         testOrder.setId(1L);
-        testOrder.setUserId(1L);
+        testOrder.setUser(userWithId(1L));
         testOrder.setReceiver("John Doe");
         testOrder.setAddress("123 Main St");
         testOrder.setTel("1234567890");
@@ -76,20 +81,27 @@ class OrderServiceImplTest {
 
         testOrderItem = new OrderItem();
         testOrderItem.setId(1L);
-        testOrderItem.setOrderId(1L);
         testOrderItem.setBookId(1L);
         testOrderItem.setBookTitle("Test Book");
         testOrderItem.setBookCover("cover.jpg");
         testOrderItem.setNumber(2);
         testOrderItem.setUnitPrice(2999); // 29.99 * 100
+        testOrder.addItem(testOrderItem);
+    }
+
+    private User userWithId(Long id) {
+        if (id == null) return null;
+        User user = new User();
+        user.setId(id);
+        return user;
     }
 
     // ========== FIND ORDERS BY USER ID ==========
 
     @Test
     void findOrdersByUserId_shouldReturnOrders() {
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.findOrdersByUserId(1L);
 
@@ -103,7 +115,7 @@ class OrderServiceImplTest {
 
     @Test
     void findOrdersByUserId_shouldReturnEmptyWhenNoOrders() {
-        when(orderRepository.findByUserId(999L)).thenReturn(Collections.emptyList());
+        when(orderRepository.findByUser_Id(999L)).thenReturn(Collections.emptyList());
 
         List<OrderDTO> result = orderService.findOrdersByUserId(999L);
 
@@ -115,7 +127,7 @@ class OrderServiceImplTest {
     @Test
     void findOrderById_shouldReturnOrderWhenFound() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         OrderDTO result = orderService.findOrderById(1L);
 
@@ -137,12 +149,16 @@ class OrderServiceImplTest {
 
     @Test
     void createOrder_shouldSucceedWithValidCart() {
-        when(cartRepository.findByUserId(1L)).thenReturn(Arrays.asList(cartItem));
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(cartItem));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(testOrderItem);
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
-        doNothing().when(cartRepository).deleteByUserId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(userWithId(1L)));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(1L);
+            return order;
+        });
+        testOrder.setItems(Arrays.asList(testOrderItem));
+        doNothing().when(cartRepository).deleteByUser_Id(1L);
 
         OrderDTO result = orderService.createOrder(1L, "John Doe", "123 Main St", "1234567890");
 
@@ -151,13 +167,16 @@ class OrderServiceImplTest {
         assertEquals("123 Main St", result.getAddress());
         assertEquals("1234567890", result.getTel());
         verify(orderRepository, times(1)).save(any(Order.class));
-        verify(orderItemRepository, atLeastOnce()).save(any(OrderItem.class));
-        verify(cartRepository, times(1)).deleteByUserId(1L);
+        ArgumentCaptor<Order> saved = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(saved.capture());
+        assertEquals(1, saved.getValue().getItems().size());
+        assertSame(saved.getValue(), saved.getValue().getItems().get(0).getOrder());
+        verify(cartRepository, times(1)).deleteByUser_Id(1L);
     }
 
     @Test
     void createOrder_shouldReturnNullWhenCartIsEmpty() {
-        when(cartRepository.findByUserId(1L)).thenReturn(Collections.emptyList());
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Collections.emptyList());
 
         OrderDTO result = orderService.createOrder(1L, "John", "Address", "Tel");
 
@@ -168,18 +187,16 @@ class OrderServiceImplTest {
     @Test
     void createOrder_shouldThrowExceptionWhenInsufficientInventory() {
         testBook.setInventory(1); // Only 1 in stock, but cart has 2
-        when(cartRepository.findByUserId(1L)).thenReturn(Arrays.asList(cartItem));
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(cartItem));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
-        // orderRepository.save() is called once for the order header before inventory check
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(userWithId(1L)));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 orderService.createOrder(1L, "John", "Address", "Tel")
         );
 
         assertTrue(ex.getMessage().contains("库存不足"));
-        // The order IS saved before the inventory validation throws (line 103)
-        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderRepository, never()).save(any(Order.class));
     }
 
     @Test
@@ -188,19 +205,22 @@ class OrderServiceImplTest {
         // OrderItem created with null number (becomes 0)
         OrderItem savedItem = new OrderItem();
         savedItem.setId(1L);
-        savedItem.setOrderId(1L);
         savedItem.setBookId(1L);
         savedItem.setBookTitle("Test Book");
         savedItem.setBookCover("cover.jpg");
         savedItem.setNumber(0); // comes from null cart number
         savedItem.setUnitPrice(2999);
 
-        when(cartRepository.findByUserId(1L)).thenReturn(Arrays.asList(cartItem));
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(cartItem));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(savedItem);
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(savedItem));
-        doNothing().when(cartRepository).deleteByUserId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(userWithId(1L)));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(1L);
+            return order;
+        });
+        testOrder.setItems(Arrays.asList(savedItem));
+        doNothing().when(cartRepository).deleteByUser_Id(1L);
 
         OrderDTO result = orderService.createOrder(1L, "John", "Address", "Tel");
 
@@ -212,17 +232,23 @@ class OrderServiceImplTest {
     void createOrder_shouldSkipBookWhenNotFound() {
         Cart cartWithMissingBook = new Cart();
         cartWithMissingBook.setId(2L);
-        cartWithMissingBook.setBookId(999L);
-        cartWithMissingBook.setUserId(1L);
+        Book missingBook = new Book();
+        missingBook.setId(999L);
+        cartWithMissingBook.setBook(missingBook);
+        cartWithMissingBook.setUser(userWithId(1L));
         cartWithMissingBook.setNumber(1);
 
-        when(cartRepository.findByUserId(1L)).thenReturn(Arrays.asList(cartItem, cartWithMissingBook));
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(cartItem, cartWithMissingBook));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
         when(bookRepository.findById(999L)).thenReturn(Optional.empty());
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
-        when(orderItemRepository.save(any(OrderItem.class))).thenReturn(testOrderItem);
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
-        doNothing().when(cartRepository).deleteByUserId(1L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(userWithId(1L)));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+            Order order = invocation.getArgument(0);
+            order.setId(1L);
+            return order;
+        });
+        testOrder.setItems(Arrays.asList(testOrderItem));
+        doNothing().when(cartRepository).deleteByUser_Id(1L);
 
         OrderDTO result = orderService.createOrder(1L, "John", "Address", "Tel");
 
@@ -235,21 +261,20 @@ class OrderServiceImplTest {
     void findAllOrders_shouldReturnAllOrdersSortedByCreatedAtDesc() {
         Order order2 = new Order();
         order2.setId(2L);
-        order2.setUserId(2L);
+        order2.setUser(userWithId(2L));
         order2.setReceiver("Jane");
         order2.setCreatedAt(LocalDateTime.of(2026, 6, 1, 12, 0));
 
         OrderItem item2 = new OrderItem();
         item2.setId(2L);
-        item2.setOrderId(2L);
         item2.setBookId(2L);
         item2.setBookTitle("Book 2");
         item2.setNumber(1);
         item2.setUnitPrice(1999);
 
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder, order2));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
-        when(orderItemRepository.findByOrderId(2L)).thenReturn(Arrays.asList(item2));
+        testOrder.setItems(Arrays.asList(testOrderItem));
+        order2.setItems(Arrays.asList(item2));
 
         List<OrderDTO> result = orderService.findAllOrders();
 
@@ -277,7 +302,7 @@ class OrderServiceImplTest {
 
         when(orderRepository.findByUserIdAndTimeRange(1L, start, end))
                 .thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(1L, start, end, null);
 
@@ -287,8 +312,8 @@ class OrderServiceImplTest {
 
     @Test
     void searchOrders_shouldFilterByUserIdOnly() {
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(1L, null, null, null);
 
@@ -297,8 +322,8 @@ class OrderServiceImplTest {
 
     @Test
     void searchOrders_shouldFilterByBookTitle() {
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(1L, null, null, "Test");
 
@@ -307,8 +332,8 @@ class OrderServiceImplTest {
 
     @Test
     void searchOrders_shouldExcludeOrdersWithoutMatchingBookTitle() {
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(1L, null, null, "NonExistent");
 
@@ -319,11 +344,11 @@ class OrderServiceImplTest {
     void searchOrders_shouldHandleNullItemList() {
         Order orderWithNullItems = new Order();
         orderWithNullItems.setId(3L);
-        orderWithNullItems.setUserId(1L);
+        orderWithNullItems.setUser(userWithId(1L));
         orderWithNullItems.setCreatedAt(LocalDateTime.now());
 
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(orderWithNullItems));
-        when(orderItemRepository.findByOrderId(3L)).thenReturn(Collections.emptyList());
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(orderWithNullItems));
+        orderWithNullItems.setItems(Collections.emptyList());
 
         List<OrderDTO> result = orderService.searchOrders(1L, null, null, "Test");
 
@@ -336,7 +361,7 @@ class OrderServiceImplTest {
         LocalDateTime end = LocalDateTime.of(2027, 1, 1, 0, 0);
 
         when(orderRepository.findByTimeRange(start, end)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(null, start, end, null);
 
@@ -346,7 +371,7 @@ class OrderServiceImplTest {
     @Test
     void searchOrders_shouldReturnAllWhenNoParams() {
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(null, null, null, null);
 
@@ -359,7 +384,7 @@ class OrderServiceImplTest {
 
         when(orderRepository.findByUserIdAndTimeRange(eq(1L), eq(start), any(LocalDateTime.class)))
                 .thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchOrders(1L, start, null, null);
 
@@ -371,7 +396,7 @@ class OrderServiceImplTest {
     @Test
     void searchAllOrders_shouldDelegateToSearchOrdersWithNullUserId() {
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<OrderDTO> result = orderService.searchAllOrders(null, null, null);
 
@@ -384,14 +409,13 @@ class OrderServiceImplTest {
     void getSalesRanking_shouldReturnBookSalesRanked() {
         OrderItem item2 = new OrderItem();
         item2.setId(2L);
-        item2.setOrderId(1L);
         item2.setBookId(2L);
         item2.setBookTitle("Book 2");
         item2.setNumber(5);
         item2.setUnitPrice(1999);
 
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem, item2));
+        testOrder.setItems(Arrays.asList(testOrderItem, item2));
 
         List<Map<String, Object>> result = orderService.getSalesRanking(null, null);
 
@@ -409,7 +433,7 @@ class OrderServiceImplTest {
         LocalDateTime end = LocalDateTime.of(2027, 1, 1, 0, 0);
 
         when(orderRepository.findByTimeRange(start, end)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<Map<String, Object>> result = orderService.getSalesRanking(start, end);
 
@@ -421,7 +445,7 @@ class OrderServiceImplTest {
     void getSalesRanking_shouldSkipNullBookId() {
         testOrderItem.setBookId(null);
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<Map<String, Object>> result = orderService.getSalesRanking(null, null);
 
@@ -434,14 +458,13 @@ class OrderServiceImplTest {
     void getConsumptionRanking_shouldReturnUserSpendingRanked() {
         OrderItem item2 = new OrderItem();
         item2.setId(2L);
-        item2.setOrderId(1L);
         item2.setBookId(2L);
         item2.setBookTitle("Book 2");
         item2.setNumber(3);
         item2.setUnitPrice(5000); // 50.00
 
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem, item2));
+        testOrder.setItems(Arrays.asList(testOrderItem, item2));
 
         List<Map<String, Object>> result = orderService.getConsumptionRanking(null, null);
 
@@ -454,7 +477,7 @@ class OrderServiceImplTest {
 
     @Test
     void getConsumptionRanking_shouldSkipNullUserId() {
-        testOrder.setUserId(null);
+        testOrder.setUser(userWithId(null));
         when(orderRepository.findAll()).thenReturn(Arrays.asList(testOrder));
 
         List<Map<String, Object>> result = orderService.getConsumptionRanking(null, null);
@@ -468,7 +491,7 @@ class OrderServiceImplTest {
         LocalDateTime end = LocalDateTime.of(2027, 1, 1, 0, 0);
 
         when(orderRepository.findByTimeRange(start, end)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         List<Map<String, Object>> result = orderService.getConsumptionRanking(start, end);
 
@@ -480,8 +503,8 @@ class OrderServiceImplTest {
 
     @Test
     void getPersonalStatistics_shouldReturnUserStats() {
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         Map<String, Object> result = orderService.getPersonalStatistics(1L, null, null);
 
@@ -499,7 +522,7 @@ class OrderServiceImplTest {
 
         when(orderRepository.findByUserIdAndTimeRange(1L, start, end))
                 .thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         Map<String, Object> result = orderService.getPersonalStatistics(1L, start, end);
 
@@ -512,8 +535,8 @@ class OrderServiceImplTest {
         testOrderItem.setNumber(null);
         testOrderItem.setUnitPrice(null);
 
-        when(orderRepository.findByUserId(1L)).thenReturn(Arrays.asList(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        when(orderRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(testOrder));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         Map<String, Object> result = orderService.getPersonalStatistics(1L, null, null);
 
@@ -529,7 +552,7 @@ class OrderServiceImplTest {
         testOrderItem.setUnitPrice(null);
 
         when(orderRepository.findById(1L)).thenReturn(Optional.of(testOrder));
-        when(orderItemRepository.findByOrderId(1L)).thenReturn(Arrays.asList(testOrderItem));
+        testOrder.setItems(Arrays.asList(testOrderItem));
 
         OrderDTO result = orderService.findOrderById(1L);
 
@@ -541,9 +564,9 @@ class OrderServiceImplTest {
     @Test
     void createOrder_shouldHandleNullInventory() {
         testBook.setInventory(null);
-        when(cartRepository.findByUserId(1L)).thenReturn(Arrays.asList(cartItem));
+        when(cartRepository.findByUser_Id(1L)).thenReturn(Arrays.asList(cartItem));
         when(bookRepository.findById(1L)).thenReturn(Optional.of(testBook));
-        when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(userWithId(1L)));
 
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 orderService.createOrder(1L, "John", "Address", "Tel")
