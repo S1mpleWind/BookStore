@@ -1,3 +1,5 @@
+import { authorizationHeaders, clearAuth, getToken, saveToken } from './auth';
+
 /**
  * API 服务层
  *
@@ -6,7 +8,7 @@
  * - 请求体序列化（JSON）
  * - 响应体解析（JSON / text）
  * - 错误信息格式化
- * - 跨域凭据（credentials: 'include' 携带 Session Cookie）
+ * - Authorization: Bearer JWT 以及 401 登录失效处理
  *
  * 使用方式：组件中 import { getBooks, loginUser, ... } from '../api'
  * 不再需要在组件中直接操作 fetch。
@@ -14,6 +16,12 @@
 
 /** 后端 API 基础地址（Spring Boot 默认端口 8080） */
 const API_BASE = 'http://localhost:8080/api/v1';
+
+function handleUnauthorized(response, url) {
+  if (response.status === 401 && !url.endsWith('/users/login') && getToken()) {
+    clearAuth();
+  }
+}
 
 /**
  * 通用 POST 请求封装
@@ -25,10 +33,10 @@ const API_BASE = 'http://localhost:8080/api/v1';
 async function postJson(url, payload) {
   const response = await fetch(url, {
     method: 'POST',
-    credentials: 'include',      // 携带 Session Cookie（JSESSIONID）
-    headers: { 'Content-Type': 'application/json' },
+    headers: authorizationHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
+  handleUnauthorized(response, url);
   const contentType = response.headers.get('content-type') || '';
   let data = null;
   if (contentType.includes('application/json')) {
@@ -55,10 +63,10 @@ async function postJson(url, payload) {
 async function putJson(url, payload) {
   const response = await fetch(url, {
     method: 'PUT',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authorizationHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
+  handleUnauthorized(response, url);
   const data = await response.json();
   if (!response.ok) throw new Error(JSON.stringify({ status: response.status, data }));
   return data;
@@ -70,7 +78,8 @@ async function putJson(url, payload) {
  * @returns {Promise<object>}
  */
 async function del(url) {
-  const response = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  const response = await fetch(url, { method: 'DELETE', headers: authorizationHeaders() });
+  handleUnauthorized(response, url);
   const data = await response.json();
   if (!response.ok) throw new Error(JSON.stringify({ status: response.status, data }));
   return data;
@@ -82,7 +91,8 @@ async function del(url) {
  * @returns {Promise<object>}
  */
 async function getJson(url) {
-  const response = await fetch(url, { credentials: 'include' });
+  const response = await fetch(url, { headers: authorizationHeaders() });
+  handleUnauthorized(response, url);
   if (!response.ok) throw new Error(JSON.stringify({ status: response.status }));
   return await response.json();
 }
@@ -93,29 +103,29 @@ async function getJson(url) {
 
 /** 获取书籍列表（支持按书名搜索） */
 export async function getBooks(title) {
-  let url = `${API_BASE}/book`;
+  let url = `${API_BASE}/books`;
   if (title) url += `?title=${encodeURIComponent(title)}`;
   return getJson(url);
 }
 
 /** 获取单本书籍详情 */
 export async function getBookById(id) {
-  return getJson(`${API_BASE}/book/${id}`);
+  return getJson(`${API_BASE}/books/${id}`);
 }
 
 /** 管理员：添加新书 */
 export async function addBook(bookData) {
-  return postJson(`${API_BASE}/book`, bookData);
+  return postJson(`${API_BASE}/books`, bookData);
 }
 
 /** 管理员：修改书籍信息 */
 export async function updateBook(id, bookData) {
-  return putJson(`${API_BASE}/book/${id}`, bookData);
+  return putJson(`${API_BASE}/books/${id}`, bookData);
 }
 
 /** 管理员：删除书籍 */
 export async function deleteBook(id) {
-  return del(`${API_BASE}/book/${id}`);
+  return del(`${API_BASE}/books/${id}`);
 }
 
 // ═══════════════════════════════════════════
@@ -124,7 +134,9 @@ export async function deleteBook(id) {
 
 /** 用户登录 */
 export async function loginUser(credentials) {
-  return postJson(`${API_BASE}/users/login`, credentials);
+  const data = await postJson(`${API_BASE}/users/login`, credentials);
+  if (data.token) saveToken(data.token);
+  return data;
 }
 
 /** 用户注册 */
@@ -134,7 +146,11 @@ export async function registerUser(profile) {
 
 /** 用户登出 */
 export async function logoutUser() {
-  return postJson(`${API_BASE}/users/logout`, {});
+  try {
+    return await postJson(`${API_BASE}/users/logout`, {});
+  } finally {
+    clearAuth();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -251,4 +267,8 @@ export async function getMyStatistics(start, end) {
   if (end) q.append('end', end);
   const qs = q.toString();
   return getJson(`${API_BASE}/statistics/my-purchases${qs ? '?' + qs : ''}`);
+}
+/** AI 客服助手：发送对话消息并执行后端 Function Calling */
+export async function chatWithAssistant(messages) {
+  return postJson(`${API_BASE}/assistant/chat`, { messages });
 }

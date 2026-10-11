@@ -123,7 +123,7 @@
 ### B. Java 后端
 
 - [x] 使用 Spring 框架开发（Spring Boot/JPA/Security）
-  - 对应：`backend/pom.xml` 中 `spring-boot-starter-parent`、`spring-boot-starter-data-jpa`、`spring-boot-starter-web`（未使用 Spring Security，使用 Session 鉴权）
+  - 对应：`backend/pom.xml` 中 `spring-boot-starter-parent`、`spring-boot-starter-data-jpa`、`spring-boot-starter-web`（未使用 Spring Security，使用 JJWT 与 JwtInterceptor 无状态鉴权）
 - [x] 使用 Maven 或类似工具打包管理
   - 对应：`backend/pom.xml` Maven 项目 + `mvnw` 脚本
 

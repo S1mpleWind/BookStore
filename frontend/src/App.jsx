@@ -13,32 +13,13 @@ import ManageBooks from './pages/ManageBooks';
 import ManageUsers from './pages/ManageUsers';
 import AdminOrders from './pages/AdminOrders';
 import Statistics from './pages/Statistics';
+import Assistant from './pages/Assistant';
+import AssistantWidget from './components/AssistantWidget';
 import { CartProvider } from './components/CartContext';
-import { UserProvider } from './components/UserContext';
+import { UserProvider, useUser } from './components/UserContext';
 import './styles/style.css';
 import './styles/detail-actions.css';
 import './styles/antd-overrides.css';
-
-/**
- * 检查用户是否已登录
- * 从 localStorage 读取 isLoggedIn 标记
- * @returns {boolean}
- */
-const isLoggedIn = () => {
-  try { return localStorage.getItem('isLoggedIn') === 'true'; } catch { return false; }
-};
-
-/**
- * 检查当前用户是否为管理员
- * 从 localStorage 读取 user 对象，判断 identity 是否为 1
- * @returns {boolean}
- */
-const isAdmin = () => {
-  try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    return user.identity === 1;
-  } catch { return false; }
-};
 
 /**
  * 路由守卫组件
@@ -54,10 +35,11 @@ const isAdmin = () => {
  */
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const location = useLocation();
-  if (!isLoggedIn()) {
+  const { isAuthenticated, user } = useUser();
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
-  if (adminOnly && !isAdmin()) {
+  if (adminOnly && user?.identity !== 1) {
     return <Navigate to="/" replace />;
   }
   return children;
@@ -74,6 +56,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
  */
 const AppRoutes = ({ selectedBook, setSelectedBook }) => {
   const location = useLocation();
+  const { isAuthenticated } = useUser();
   const onLoginPage = location.pathname === '/login';
 
   return (
@@ -83,7 +66,7 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
       <main className={`main-content ${onLoginPage ? 'main-content-login' : ''}`}>
         <Routes>
           {/* 登录页：已登录则跳首页 */}
-          <Route path="/login" element={isLoggedIn() ? <Navigate to="/" replace /> : <Login />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
 
           {/* 通用页面（需登录） */}
           <Route path="/" element={<ProtectedRoute><Home setSelectedBook={setSelectedBook} /></ProtectedRoute>} />
@@ -94,6 +77,7 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
 
           {/* 顾客和管理员都可用 */}
           <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
+          <Route path="/assistant" element={<ProtectedRoute><Assistant /></ProtectedRoute>} />
 
           {/* 管理员专用 */}
           <Route path="/manage-books" element={<ProtectedRoute adminOnly><ManageBooks /></ProtectedRoute>} />
@@ -103,6 +87,7 @@ const AppRoutes = ({ selectedBook, setSelectedBook }) => {
           {/* 未匹配路由 → 兜底重定向 */}
           <Route path="*" element={<Navigate to={isLoggedIn() ? '/' : '/login'} replace />} />
         </Routes>
+        {location.pathname === '/' && <AssistantWidget />}
       </main>
     </div>
   );

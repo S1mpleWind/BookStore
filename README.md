@@ -1,7 +1,20 @@
 
-# 📚 e-Bookstore 在线书店系统 (迭代 2)
+# 📚 e-Bookstore 在线书店系统（作业 4：JWT 与虚拟线程）
 
 本项目是一个基于 Spring Boot 后端与 React 前端构建的完整在线书店系统，实现了前后端数据贯通与持久化存储。
+
+## 作业 4 运行入口
+
+后端使用 Java 21，开启 Spring Boot 虚拟线程，并通过 JJWT 实现无状态登录认证。
+
+```bash
+sdk env
+./scripts/run-jwt-demo.sh
+```
+
+演示模式使用独立 H2 内存数据库，账号 `demo/demo123` 和 `admin/admin123`，默认模拟 300ms 查询等待。
+另开终端执行 `python3 scripts/verify-jwt.py` 验证 401、200 和真实 HTTP 请求的虚拟线程。
+完整运行、MySQL 配置、鉴权说明及截图方法见 [作业 4 说明](docs/HOMEWORK4.md)。
 
 ## 🚀 项目架构说明
 
@@ -23,7 +36,7 @@
 - **Data Access 层 (Repository)**: 继承 JpaRepository，使用 Spring Data JPA 实现对 MySQL 的高效访问。
 - DTO 层：在前端和后端之间引入Data Transfer Object
 - Entity 层: 将数据库表映射为 Java 实体类，实现数据模型化处理。
-- interceptor层：使用cookie保护session，防止id劫持
+- interceptor 层：校验 Bearer JWT，不创建登录 Session；权限使用数据库中的当前角色。
 
 ## 🛠️ 实现功能清单
 
@@ -37,7 +50,7 @@
 
 以“获取图书详情”为例，说明系统运行的全过程：
 
-1. 前端发起请求: 用户点击某本书籍，React 通过 fetch 向 http://localhost:8080/api/v1/book/{id} 发送 GET 请求。
+1. 前端发起请求: 用户点击某本书籍，React 通过 fetch 向 http://localhost:8080/api/v1/books/{id} 发送 GET 请求。
 2. 后端路由拦截: 后端 BookController 接收到请求，提取路径参数 id。
 3. 服务层处理: BookService 被调用，向 BookRepository 发出指令。
 4. 数据库访问: Spring Data JPA 自动生成 SQL 语句执行查询：SELECT * FROM book WHERE id = ?。
@@ -74,3 +87,98 @@
 ## TODO
 
 - 权限漏洞：出于简单的实现，`CartController`和`OrderController`中的结构直接依赖userId，可能会带来漏洞，后续需要可以应用 *Security* 架构修补
+
+## 🤖 Function Calling 智能客服助手
+
+项目现已包含 `/assistant` 智能客服页面：首页右下角的悬浮按钮也可以打开轻量助手。助手支持查询本店 ISBN 库存，并使用确定性的本地模拟数据查询竞争对手价格。
+
+启动后端前配置真实 OpenAI API Key（不要写入源码）：
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+export OPENAI_MODEL="gpt-4o-mini"       # 可选
+export OPENAI_BASE_URL="https://api.openai.com/v1"  # 可选
+```
+
+后端接口为 `POST /api/v1/assistant/chat`。后端控制台会打印类似下面的 Function Calling 日志，前端也会展示工具参数和结果：
+
+```text
+[Function Calling] name=check_inventory, arguments={"isbn":"978-7-5302-1015-3"}
+```
+
+未配置 `OPENAI_API_KEY` 时不会执行本地伪造的模型回复，接口会返回明确的配置错误。
+
+## ⚠️ 前端登录出现 `Failed to fetch` 的排查
+
+如果前端登录时一直显示 `Failed to fetch`，通常不是用户名或密码错误，而是前端与后端之间的跨域/地址访问问题。当前前端默认请求：
+
+```text
+http://localhost:8080/api/v1
+```
+
+后端 CORS 当前允许的前端地址是：
+
+```text
+http://localhost:5173
+```
+
+因此浏览器请使用：
+
+```text
+http://localhost:5173
+```
+
+不要将前端页面改用 `http://127.0.0.1:5173` 访问，否则可能因为 Origin 不一致而触发 CORS 错误。
+
+如果后端运行在 WSL，而浏览器运行在 Windows，浏览器访问的 `localhost:8080` 还可能受到 WSL 端口转发或系统代理影响。建议检查：
+
+```powershell
+curl.exe -i http://localhost:8080/api/v1/users/login
+```
+
+如果浏览器或代理软件开启了代理，请将以下地址加入代理绕过列表：
+
+```text
+localhost
+127.0.0.1
+::1
+```
+
+常见现象：
+
+- 返回 `401`：网络和跨域正常，通常是用户名或密码错误。
+- 返回 `405`：接口可访问，但请求方法不正确；登录接口需要使用 `POST`。
+- 浏览器显示 `Failed to fetch` 或 `ERR_CONNECTION_REFUSED`：浏览器无法访问后端，优先检查 WSL 端口、浏览器代理和 localhost 配置。
+- 浏览器控制台显示 `CORS error`：检查前端访问地址是否为 `http://localhost:5173`，以及后端 CORS 配置是否允许该 Origin。
+
+## 📦 打包源码和文档
+
+项目根目录提供了打包脚本：
+
+```bash
+./package_submission.sh
+```
+
+脚本会生成类似下面的压缩包：
+
+```text
+bookstore-source-submission-20260928_153000.zip
+```
+
+也可以指定输出文件名：
+
+```bash
+./package_submission.sh bookstore-homework.zip
+```
+
+压缩包会包含源码、配置、数据库脚本、图片资源和项目文档，但会排除：
+
+- `node_modules/`
+- `backend/target/`
+- `frontend/dist/`
+- `.git/`
+- Maven Wrapper 的二进制依赖包
+- 已有的 `.zip` 压缩包
+- `backend/application-local.properties`
+- `.env`、密钥和证书文件
+- 日志和 `.class` 编译产物

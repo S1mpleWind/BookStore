@@ -29,3 +29,6 @@ frontend/dist/
 *.class
 *.log
 .DS_Store
+
+# Local-only application secrets
+backend/application-local.properties

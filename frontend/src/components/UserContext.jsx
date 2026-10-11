@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AUTH_CHANGED, clearAuth, getToken } from '../auth';
 
 /**
  * 用户全局状态 Context
@@ -17,7 +18,7 @@ const UserContext = createContext();
 const loadUserFromStorage = () => {
   try {
     const raw = localStorage.getItem('user');
-    if (!raw) return null;
+    if (!raw || !getToken()) return null;
     return JSON.parse(raw);
   } catch (e) {
     return null;
@@ -26,6 +27,17 @@ const loadUserFromStorage = () => {
 
 export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(loadUserFromStorage);
+
+  // API 收到 401 后立即更新 Context，让路由守卫转到登录页。
+  useEffect(() => {
+    const handleAuthChanged = () => setUser(loadUserFromStorage());
+    window.addEventListener(AUTH_CHANGED, handleAuthChanged);
+    window.addEventListener('storage', handleAuthChanged);
+    return () => {
+      window.removeEventListener(AUTH_CHANGED, handleAuthChanged);
+      window.removeEventListener('storage', handleAuthChanged);
+    };
+  }, []);
 
   /** 用户数据变化时同步到 localStorage */
   useEffect(() => {
@@ -50,6 +62,8 @@ export const UserProvider = ({ children }) => {
       ...payload,
     };
 
+    // JWT 独立存储，不混入界面展示的用户资料。
+    delete next.token;
     setUser(next);
     try { localStorage.setItem('isLoggedIn', 'true'); } catch (e) {}
   };
@@ -57,16 +71,13 @@ export const UserProvider = ({ children }) => {
   /** 登出：清除 state 和 localStorage */
   const logout = () => {
     setUser(null);
-    try {
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('user');
-    } catch (e) {}
+    clearAuth();
   };
 
   /** 更新用户字段（部分更新） */
   const update = (patch) => setUser((u) => ({ ...(u || {}), ...(patch || {}) }));
 
-  const isAuthenticated = Boolean(user);
+  const isAuthenticated = Boolean(user && getToken());
 
   return (
     <UserContext.Provider value={{ user, login, logout, update, isAuthenticated }}>

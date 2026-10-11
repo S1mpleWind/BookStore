@@ -1,0 +1,65 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>JWT HTTP 验证记录</title>
+<style>body{font:16px sans-serif;margin:32px;background:#f3f5f8;color:#172033}section{background:white;border:1px solid #ccd5e0;border-radius:8px;padding:16px;margin:16px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:14px monospace}h2{margin:0 0 12px}</style>
+<h1>书店 JWT 与虚拟线程验证</h1><p>以下内容来自脚本对运行中后端发起的真实 HTTP 请求，Token 已截断。</p><p>记录时间（UTC）：2026-10-11T01:41:32.375793+00:00</p><section><h2>无 Token：401</h2><pre>{
+  &quot;url&quot;: &quot;http://localhost:18080/api/v1/books/1&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;authorization&quot;: &quot;(未携带)&quot;,
+  &quot;status&quot;: 401,
+  &quot;headers&quot;: {
+    &quot;Vary&quot;: &quot;Origin&quot;,
+    &quot;WWW-Authenticate&quot;: &quot;Bearer&quot;,
+    &quot;Content-Type&quot;: &quot;application/json;charset=UTF-8&quot;,
+    &quot;Content-Length&quot;: &quot;51&quot;,
+    &quot;Date&quot;: &quot;Sun, 11 Oct 2026 01:41:30 GMT&quot;,
+    &quot;Connection&quot;: &quot;close&quot;
+  },
+  &quot;body&quot;: {
+    &quot;error&quot;: &quot;登录凭证缺失、无效或已过期&quot;
+  }
+}</pre></section><section><h2>错误 Token：401</h2><pre>{
+  &quot;url&quot;: &quot;http://localhost:18080/api/v1/books/1&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;authorization&quot;: &quot;Bearer invalid-token...（已截断）&quot;,
+  &quot;status&quot;: 401,
+  &quot;headers&quot;: {
+    &quot;Vary&quot;: &quot;Origin&quot;,
+    &quot;WWW-Authenticate&quot;: &quot;Bearer&quot;,
+    &quot;Content-Type&quot;: &quot;application/json;charset=UTF-8&quot;,
+    &quot;Content-Length&quot;: &quot;51&quot;,
+    &quot;Date&quot;: &quot;Sun, 11 Oct 2026 01:41:30 GMT&quot;,
+    &quot;Connection&quot;: &quot;close&quot;
+  },
+  &quot;body&quot;: {
+    &quot;error&quot;: &quot;登录凭证缺失、无效或已过期&quot;
+  }
+}</pre></section><section><h2>有效 Token：200</h2><pre>{
+  &quot;url&quot;: &quot;http://localhost:18080/api/v1/books/1&quot;,
+  &quot;method&quot;: &quot;GET&quot;,
+  &quot;authorization&quot;: &quot;Bearer eyJhbGciOiJIUzI1Ni...（已截断）&quot;,
+  &quot;status&quot;: 200,
+  &quot;headers&quot;: {
+    &quot;Vary&quot;: &quot;Origin&quot;,
+    &quot;X-Virtual-Thread&quot;: &quot;true&quot;,
+    &quot;Content-Type&quot;: &quot;application/json&quot;,
+    &quot;Transfer-Encoding&quot;: &quot;chunked&quot;,
+    &quot;Date&quot;: &quot;Sun, 11 Oct 2026 01:41:30 GMT&quot;,
+    &quot;Connection&quot;: &quot;close&quot;
+  },
+  &quot;body&quot;: {
+    &quot;id&quot;: 1,
+    &quot;title&quot;: &quot;Java 21 Virtual Threads&quot;,
+    &quot;author&quot;: &quot;Bookstore Demo&quot;,
+    &quot;cover&quot;: null,
+    &quot;price&quot;: 59,
+    &quot;description&quot;: &quot;JWT and virtual thread demonstration&quot;,
+    &quot;recommended&quot;: false,
+    &quot;inventory&quot;: 100,
+    &quot;publisher&quot;: null,
+    &quot;isbn&quot;: null
+  }
+}</pre></section><section><h2>并发请求验证</h2><pre>{
+  &quot;requests&quot;: 32,
+  &quot;workers&quot;: 16,
+  &quot;successful&quot;: 32,
+  &quot;elapsedSeconds&quot;: 0.68
+}</pre><p>所有请求返回 200，且 X-Virtual-Thread: true。此结果用于功能验证，不是性能对比基准。</p></section></html>
